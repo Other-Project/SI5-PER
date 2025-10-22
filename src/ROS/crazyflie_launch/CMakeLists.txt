@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.5)
 
-project(crazyflie_ros2_multiranger_bringup)
+project(crazyflie_launch)
 
 find_package(ament_cmake REQUIRED)
 find_package(ros_gz_crazyflie_bringup REQUIRED)

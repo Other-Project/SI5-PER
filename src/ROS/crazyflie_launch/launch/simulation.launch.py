@@ -32,7 +32,7 @@ def generate_launch_description():
     )
 
     rviz_config_path = os.path.join(
-        get_package_share_directory('crazyflie_ros2_multiranger_bringup'),
+        get_package_share_directory('crazyflie_launch'),
         'config',
         'sim_mapping.rviz')
 

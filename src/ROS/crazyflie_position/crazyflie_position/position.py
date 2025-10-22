@@ -3,7 +3,6 @@ from rclpy.node import Node
 from nav_msgs.msg import Odometry
 from geometry_msgs.msg import PointStamped
 
-import tf_transformations
 import numpy as np
 
 class Position(Node):
@@ -37,14 +36,14 @@ class Position(Node):
         self.angles[1] = euler[1]
         self.angles[2] = euler[2]"""
         
-        self.get_logger().info(f"Received odom msg pos={self.position} and angles={self.angles}")
+        self.get_logger().info(f"Received odom msg")
         self.send_pos(msg)
 
     def send_pos(self, msg: Odometry):
         out = PointStamped()
         out.header = msg.header
         out.point = msg.pose.pose.position
-        print(f"Received odom message {msg}, sending {out}")
+        #print(f"Received odom message {msg}, sending {out}")
         self.publisher_position.publish(out)
 
     

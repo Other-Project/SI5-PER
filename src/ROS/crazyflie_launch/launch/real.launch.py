@@ -17,7 +17,7 @@ def generate_launch_description():
 
     # Setup project paths
     pkg_project_crazyswarm2 = get_package_share_directory('crazyflie')
-    pkg_multiranger_bringup = get_package_share_directory('crazyflie_ros2_multiranger_bringup')
+    pkg_multiranger_bringup = get_package_share_directory('crazyflie_launch')
     crazyflies_yaml = os.path.join(
         pkg_multiranger_bringup,
         'config',
@@ -53,7 +53,7 @@ def generate_launch_description():
     )
 
     rviz_config_path = os.path.join(
-        get_package_share_directory('crazyflie_ros2_multiranger_bringup'),
+        get_package_share_directory('crazyflie_launch'),
         'config',
         'real_mapping.rviz')
 
