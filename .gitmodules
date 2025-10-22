@@ -1,6 +1,3 @@
-[submodule "deps/crazyswarm2"]
-	path = deps/crazyswarm2
-	url = https://github.com/IMRCLab/crazyswarm2
 [submodule "deps/ros_gz_crazyflie"]
 	path = deps/ros_gz_crazyflie
 	url = https://github.com/knmcguire/ros_gz_crazyflie
