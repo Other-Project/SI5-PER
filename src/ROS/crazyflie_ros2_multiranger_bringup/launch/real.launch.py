@@ -42,9 +42,9 @@ def generate_launch_description():
 
     # start a simple mapper node
     simple_mapper = Node(
-        package='crazyflie_ros2_multiranger_simple_mapper',
-        executable='simple_mapper_multiranger',
-        name='simple_mapper',
+        package='crazyflie_position',
+        executable='position',
+        name='position',
         output='screen',
         parameters=[
             {'robot_prefix': 'crazyflie_real'},
