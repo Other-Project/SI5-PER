@@ -31,12 +31,20 @@ def generate_launch_description():
         ]
     )
 
+    return LaunchDescription([
+        crazyflie_simulation,
+        position,
+        #rviz()
+        ])
+
+
+def rviz():
     rviz_config_path = os.path.join(
         get_package_share_directory('crazyflie_launch'),
         'config',
         'sim_mapping.rviz')
 
-    rviz = Node(
+    return Node(
             package='rviz2',
             namespace='',
             executable='rviz2',
@@ -46,9 +54,3 @@ def generate_launch_description():
                 "use_sim_time": True
             }]
             )
-
-    return LaunchDescription([
-        crazyflie_simulation,
-        position,
-        #rviz
-        ])

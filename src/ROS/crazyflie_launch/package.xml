@@ -4,9 +4,11 @@
   <name>crazyflie_launch</name>
   <version>0.0.0</version>
   <description>Launch and config files for the crazyflie_ros2_multiranger nodes</description>
-  <maintainer email="kimberly@bitcraze.io">Kimberly McGuire</maintainer>
+  <maintainer email="evan.galli@etu.univ-cotedazur.fr">Evan Galli</maintainer>
   <license>MIT</license>
+
   <depend>ros_gz_crazyflie_bringup</depend>
+  
   <export>
     <build_type>ament_cmake</build_type>
   </export>

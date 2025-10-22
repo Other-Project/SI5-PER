@@ -4,7 +4,7 @@
   <name>crazyflie_position</name>
   <version>0.0.0</version>
   <description>TODO: Package description</description>
-  <maintainer email="evan.galli@etu.univ-cotedazur.fr">evan</maintainer>
+  <maintainer email="evan.galli@etu.univ-cotedazur.fr">Evan Galli</maintainer>
   <license>MIT</license>
 
   <test_depend>ament_copyright</test_depend>
