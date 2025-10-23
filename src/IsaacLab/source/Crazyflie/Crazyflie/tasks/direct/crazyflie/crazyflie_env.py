@@ -17,6 +17,7 @@ from isaaclab.scene import InteractiveSceneCfg
 from isaaclab.sim import SimulationCfg
 from isaaclab.terrains import TerrainImporterCfg
 from isaaclab.utils import configclass
+from isaaclab.utils.assets import ISAAC_NUCLEUS_DIR
 from isaaclab.utils.math import subtract_frame_transforms
 from isaaclab_assets import ANYDRIVE_3_SIMPLE_ACTUATOR_CFG  # isort: skip
 ##
@@ -90,9 +91,21 @@ class CrazyflieEnvCfg(DirectRLEnvCfg):
 
     # robot
     robot: ArticulationCfg = CRAZYFLIE_CFG.replace(prim_path="/World/envs/env_.*/Robot")
-    platform: ArticulationCfg = ANYDRIVE_3_SIMPLE_ACTUATOR_CFG
     thrust_to_weight = 1.9
     moment_scale = 0.01
+
+    platform: ArticulationCfg = ArticulationCfg(
+        prim_path="/World/envs/env_.*/Platform",
+        spawn=sim_utils.UsdFileCfg(
+            usd_path=f"{ISAAC_NUCLEUS_DIR}/Robots/Idealworks/iwhub/iw_hub.usd",
+            scale=(1.0, 1.0, 0.1),
+        ),
+        init_state=ArticulationCfg.InitialStateCfg(
+            pos=(0.0, 0.0, 0.0),
+            rot=(1.0, 0.0, 0.0, 0.0),
+        ),
+        actuators={}
+    )
 
     # reward scales
     lin_vel_reward_scale = -0.05
@@ -133,8 +146,9 @@ class CrazyflieEnv(DirectRLEnv):
 
     def _setup_scene(self):
         self._robot = Articulation(self.cfg.robot)
-        self._plateform = Articulation(self.cfg.robot)
+        self._platform = Articulation(self.cfg.platform)
         self.scene.articulations["robot"] = self._robot
+        self.scene.articulations["platform"] = self._platform
 
         self.cfg.terrain.num_envs = self.scene.cfg.num_envs
         self.cfg.terrain.env_spacing = self.scene.cfg.env_spacing
@@ -222,9 +236,8 @@ class CrazyflieEnv(DirectRLEnv):
 
         self._actions[env_ids] = 0.0
         # Sample new commands
-        self._desired_pos_w[env_ids, :2] = torch.zeros_like(self._desired_pos_w[env_ids, :2]).uniform_(-2.0, 2.0)
-        self._desired_pos_w[env_ids, :2] += self._terrain.env_origins[env_ids, :2]
-        self._desired_pos_w[env_ids, 2] = torch.zeros_like(self._desired_pos_w[env_ids, 2]).uniform_(0.5, 1.5)
+        self._desired_pos_w[env_ids, :2] = self._platform.data.root_pos_w[env_ids, :2]
+        self._desired_pos_w[env_ids, 2] = self._platform.data.root_pos_w[env_ids, 2]
         # Reset robot state
         joint_pos = self._robot.data.default_joint_pos[env_ids]
         joint_vel = self._robot.data.default_joint_vel[env_ids]
