@@ -30,28 +30,12 @@ def generate_launch_description():
         "crazyflie2", robot_description_config, (0.0, 2.0, 0.0)
     )"""
 
-    # TODO: don't require manually patching 
-    # ./deps/crazyflie-simulation/crazyflie_ws/src/crazyflie_description/urdf/crazyflie_body.xacro
-    # to add odometry publisher plugin
     position = Node(
         package="crazyflie_position",
         executable="position",
         name="position",
         output="screen",
         parameters=[{"robot_prefix": "crazyflie"}],
-    )
-
-    bridge = Node(
-        package="ros_gz_bridge",
-        executable="parameter_bridge",
-        parameters=[
-            {
-                "config_file": os.path.join(
-                    get_package_share_directory("crazyflie_launch"), "config", "ros_gz_crazyflie_bridge.yaml"
-                ),
-            }
-        ],
-        output="screen",
     )
 
     control = Node(
@@ -66,7 +50,7 @@ def generate_launch_description():
         ],
     )
 
-    return LaunchDescription([crazyflie_simulation, position, bridge, control])
+    return LaunchDescription([crazyflie_simulation, position, control])
 
 
 def spawn_in_gazebo(

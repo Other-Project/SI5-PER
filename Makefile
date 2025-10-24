@@ -2,7 +2,7 @@ SHELL := /bin/bash
 
 ros:
 	source /opt/ros/*/setup.bash && \
-	colcon --log-base .out/ros_logs build --build-base .out/ros_build --install-base .out/ros_install --base-paths deps src/ROS --cmake-args -DBUILD_TESTING=ON
+	colcon --log-base .out/ros_logs build --build-base .out/ros_build --install-base .out/ros_install --base-paths src/ROS --cmake-args -DBUILD_TESTING=ON
 
 sim: ros
 	source .out/ros_install/setup.bash && \

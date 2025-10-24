@@ -70,7 +70,7 @@ class ControlServices(Node):
             new_cmd_msg.angular.z = self.max_ang_z_rate * abs(msg.angular.z)/msg.angular.z
 
         # If there is no control in height and the drone is flying, control and maintain the height
-        tolerance = 1e-7
+        tolerance = 1e-2
         if abs(height_command) < tolerance and self.is_flying:
             if not self.keep_height:
                 self.desired_height = self.current_pose.position.z
