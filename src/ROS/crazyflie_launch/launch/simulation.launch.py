@@ -38,7 +38,7 @@ def generate_launch_description():
         executable="position",
         name="position",
         output="screen",
-        parameters=[{"robot_prefix": "crazyflie"}, {"use_sim_time": True}],
+        parameters=[{"robot_prefix": "crazyflie"}],
     )
 
     bridge = Node(
@@ -55,7 +55,7 @@ def generate_launch_description():
     )
 
     control = Node(
-        package="ros_gz_crazyflie_control",
+        package="crazyflie_control",
         executable="control_services",
         output="screen",
         parameters=[
