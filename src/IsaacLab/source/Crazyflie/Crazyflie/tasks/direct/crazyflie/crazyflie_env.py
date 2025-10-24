@@ -98,7 +98,7 @@ class CrazyflieEnvCfg(DirectRLEnvCfg):
         prim_path="/World/envs/env_.*/Platform",
         spawn=sim_utils.UsdFileCfg(
             usd_path=f"{ISAAC_NUCLEUS_DIR}/Samples/ROS2/Robots/turtlebot3_burger_ROS.usd",
-            scale=(1.0, 1.0, 0.1),
+            scale=(1.0, 1.0, 1.0),
         ),
         init_state=ArticulationCfg.InitialStateCfg(
             pos=(0.0, 0.0, 0.0),
@@ -176,6 +176,7 @@ class CrazyflieEnv(DirectRLEnv):
         self._robot.set_external_force_and_torque(self._thrust, self._moment, body_ids=self._body_id)
 
     def _get_observations(self) -> dict:
+        self._desired_pos_w = self._platform.data.root_pos_w.clone()
         desired_pos_b, _ = subtract_frame_transforms(
             self._robot.data.root_pos_w, self._robot.data.root_quat_w, self._desired_pos_w
         )
@@ -209,7 +210,7 @@ class CrazyflieEnv(DirectRLEnv):
 
     def _get_dones(self) -> tuple[torch.Tensor, torch.Tensor]:
         time_out = self.episode_length_buf >= self.max_episode_length - 1
-        died = torch.logical_or(self._robot.data.root_pos_w[:, 2] < 0.1, self._robot.data.root_pos_w[:, 2] > 2.0)
+        died = torch.logical_or(self._robot.data.root_pos_w[:, 2] <= 0, self._robot.data.root_pos_w[:, 2] > 2.0)
         return died, time_out
 
     def _reset_idx(self, env_ids: torch.Tensor | None):
@@ -235,7 +236,8 @@ class CrazyflieEnv(DirectRLEnv):
 
         num_envs_to_reset = len(env_ids)
 
-        random_xy = (torch.rand(num_envs_to_reset, 2, device=self.device) - 0.5) * 2.0 * self.cfg.platform_spawn_xy
+        random_xy = (torch.rand(num_envs_to_reset, 2,
+                                device=self.device) - 0.5) * 2.0 * self.cfg.platform_spawn_range_xy
         random_z = torch.full((num_envs_to_reset, 1), self.cfg.platform_spawn_z, device=self.device)
         random_pos = torch.cat([random_xy, random_z], dim=-1)
         random_pos += self._terrain.env_origins[env_ids]
@@ -257,7 +259,7 @@ class CrazyflieEnv(DirectRLEnv):
         joint_vel = self._robot.data.default_joint_vel[env_ids]
         default_root_state = self._robot.data.default_root_state[env_ids]
         default_root_state[:, 2] = (torch.rand(len(env_ids), device=self.device) * (
-                    self.cfg.max_height - self.cfg.min_height) + self.cfg.min_height)
+                self.cfg.drone_max_height - self.cfg.drone_min_height) + self.cfg.drone_min_height)
         default_root_state[:, :3] += self._terrain.env_origins[env_ids]
         self._robot.write_root_pose_to_sim(default_root_state[:, :7], env_ids)
         self._robot.write_root_velocity_to_sim(default_root_state[:, 7:], env_ids)
