@@ -6,7 +6,6 @@ ros:
 
 sim: ros
 	source .out/ros_install/setup.bash && \
-	export GZ_SIM_RESOURCE_PATH="$(CURDIR)/deps/crazyflie-simulation/simulator_files/gazebo/" && \
 	ros2 launch crazyflie_launch simulation.launch.py
 
 ros_term: ros

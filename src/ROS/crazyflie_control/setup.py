@@ -17,7 +17,6 @@ setup(
     maintainer_email='kimberly@bitcraze.io',
     description='Simple control scripts for the Crazyflie',
     license='MIT',
-    tests_require=['pytest'],
     entry_points={
         'console_scripts': [
             'control_services = crazyflie_control.control_services:main',
