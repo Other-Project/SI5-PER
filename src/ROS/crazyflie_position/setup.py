@@ -12,15 +12,10 @@ setup(
     ],
     install_requires=['setuptools'],
     zip_safe=True,
-    maintainer='evan',
+    maintainer='Evan Galli',
     maintainer_email='evan.galli@etu.univ-cotedazur.fr',
     description='TODO: Package description',
     license='MIT',
-    extras_require={
-        'test': [
-            'pytest',
-        ],
-    },
     entry_points={
         'console_scripts': [
         'position = crazyflie_position.position:main',

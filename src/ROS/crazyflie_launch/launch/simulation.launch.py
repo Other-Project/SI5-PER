@@ -20,15 +20,13 @@ def generate_launch_description():
     launch_file = PythonLaunchDescriptionSource(os.path.join(pkg_project_crazyflie_gazebo, 'launch', 'spawn_crazyflie_gz.launch.py'))
     crazyflie_simulation = IncludeLaunchDescription(launch_file)
 
-    """# Spawn robot in Gazebo
-    pkg_share = get_package_share_directory("crazyflie_description")
-    xacro_file = os.path.join(pkg_share, "urdf", "crazyflie_body.xacro")
-    robot_description_config = xacro.process_file(
-        xacro_file
-    ).toxml()  # Process xacro → urdf
+    # Spawn robot in Gazebo
+    pkg_share = get_package_share_directory("alphabot2_description")
+    xacro_file = os.path.join(pkg_share, "urdf", "alphabot2.urdf")
+    robot_description_config = xacro.process_file(xacro_file).toxml()  # Process xacro → urdf
     spawn_robot = spawn_in_gazebo(
-        "crazyflie2", robot_description_config, (0.0, 2.0, 0.0)
-    )"""
+        "alphabot2", robot_description_config, (0.0, 2.0, 0.0)
+    )
 
     position = Node(
         package="crazyflie_position",
@@ -50,7 +48,7 @@ def generate_launch_description():
         ],
     )
 
-    return LaunchDescription([crazyflie_simulation, position, control])
+    return LaunchDescription([crazyflie_simulation, spawn_robot, position, control])
 
 
 def spawn_in_gazebo(
