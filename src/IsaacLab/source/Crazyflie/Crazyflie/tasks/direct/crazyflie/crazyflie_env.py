@@ -17,13 +17,14 @@ from isaaclab.scene import InteractiveSceneCfg
 from isaaclab.sim import SimulationCfg
 from isaaclab.terrains import TerrainImporterCfg
 from isaaclab.utils import configclass
-from isaaclab.utils.assets import ISAAC_NUCLEUS_DIR
 from isaaclab.utils.math import subtract_frame_transforms
 from isaaclab_assets import ANYDRIVE_3_SIMPLE_ACTUATOR_CFG  # isort: skip
 ##
 # Pre-defined configs
 ##
 from isaaclab_assets import CRAZYFLIE_CFG  # isort: skip
+
+from ....assets import ALPHABOT_CFG
 
 
 class CrazyflieEnvWindow(BaseEnvWindow):
@@ -89,22 +90,14 @@ class CrazyflieEnvCfg(DirectRLEnvCfg):
         num_envs=4096, env_spacing=2.5, replicate_physics=True, clone_in_fabric=True
     )
 
-    # robot
+    # drone
     robot: ArticulationCfg = CRAZYFLIE_CFG.replace(prim_path="/World/envs/env_.*/Robot")
     thrust_to_weight = 1.9
     moment_scale = 0.01
 
-    platform: ArticulationCfg = ArticulationCfg(
-        prim_path="/World/envs/env_.*/Platform",
-        spawn=sim_utils.UsdFileCfg(
-            usd_path=f"{ISAAC_NUCLEUS_DIR}/Samples/ROS2/Robots/turtlebot3_burger_ROS.usd",
-            scale=(1.0, 1.0, 1.0),
-        ),
-        init_state=ArticulationCfg.InitialStateCfg(
-            pos=(0.0, 0.0, 0.0),
-            rot=(1.0, 0.0, 0.0, 0.0),
-        ),
-        actuators={}
+    # alpha bot
+    platform: ArticulationCfg = ALPHABOT_CFG.replace(
+        prim_path="/World/envs/env_.*/Platform"
     )
 
     # reward scales
@@ -118,6 +111,11 @@ class CrazyflieEnvCfg(DirectRLEnvCfg):
     drone_min_height = 0.4
     drone_max_height = 0.6
 
+    # Alpha bot movement parameters
+    platform_max_linear_velocity = 0.5  # m/s
+    platform_max_angular_velocity = 1.0  # rad/s
+
+
 class CrazyflieEnv(DirectRLEnv):
     cfg: CrazyflieEnvCfg
 
@@ -128,7 +126,11 @@ class CrazyflieEnv(DirectRLEnv):
         self._actions = torch.zeros(self.num_envs, gym.spaces.flatdim(self.single_action_space), device=self.device)
         self._thrust = torch.zeros(self.num_envs, 1, 3, device=self.device)
         self._moment = torch.zeros(self.num_envs, 1, 3, device=self.device)
-        # Goal position
+
+        # Platform wheel velocities for differential drive
+        self._platform_wheel_vel = torch.zeros(self.num_envs, 2, device=self.device)
+
+        # Goal position (platform center)
         self._desired_pos_w = torch.zeros(self.num_envs, 3, device=self.device)
 
         # Logging
@@ -171,9 +173,23 @@ class CrazyflieEnv(DirectRLEnv):
         self._actions = actions.clone().clamp(-1.0, 1.0)
         self._thrust[:, 0, 2] = self.cfg.thrust_to_weight * self._robot_weight * (self._actions[:, 0] + 1.0) / 2.0
         self._moment[:, 0, :] = self.cfg.moment_scale * self._actions[:, 1:]
+        self._update_platform_movement()
 
     def _apply_action(self):
         self._robot.set_external_force_and_torque(self._thrust, self._moment, body_ids=self._body_id)
+
+        joint_indices = self._platform.find_joints(["joint_left_wheel", "joint_right_wheel"])[0]
+        self._platform.set_joint_velocity_target(self._platform_wheel_vel, joint_indices=joint_indices)
+
+    def _update_platform_movement(self):
+        """Update platform movement with simple random policy or patrol pattern."""
+        if self.common_step_counter % 50 == 0:
+            random_linear = (torch.rand(self.num_envs,
+                                        device=self.device) - 0.5) * 2.0 * self.cfg.platform_max_linear_velocity
+            random_angular = (torch.rand(self.num_envs,
+                                         device=self.device) - 0.5) * 2.0 * self.cfg.platform_max_angular_velocity
+            self._platform_wheel_vel[:, 0] = random_linear - random_angular
+            self._platform_wheel_vel[:, 1] = random_linear + random_angular
 
     def _get_observations(self) -> dict:
         self._desired_pos_w = self._platform.data.root_pos_w.clone()
@@ -243,7 +259,11 @@ class CrazyflieEnv(DirectRLEnv):
         random_pos += self._terrain.env_origins[env_ids]
         default_root_state_platform = self._platform.data.default_root_state[env_ids]
         default_root_state_platform[:, :3] = random_pos
+        random_yaw = torch.rand(num_envs_to_reset, device=self.device) * 2.0 * 3.14159
+        default_root_state_platform[:, 3] = torch.cos(random_yaw / 2.0)  # w
+        default_root_state_platform[:, 6] = torch.sin(random_yaw / 2.0)  # z
         self._platform.write_root_pose_to_sim(default_root_state_platform[:, :7], env_ids)
+        self._platform_wheel_vel[env_ids] = 0.0
 
         self._robot.reset(env_ids)
         super()._reset_idx(env_ids)
