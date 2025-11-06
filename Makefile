@@ -16,5 +16,9 @@ teleop:
 	source /opt/ros/*/setup.bash && \
 	ros2 run teleop_twist_keyboard teleop_twist_keyboard
 
+teleop_bot:
+	source /opt/ros/*/setup.bash && \
+	ros2 run teleop_twist_keyboard teleop_twist_keyboard --ros-args --remap cmd_vel:=alphabot2/cmd_vel
+
 clean:
 	rm -R .out/
