@@ -4,6 +4,11 @@ import isaaclab.sim as sim_utils
 from isaaclab.assets import ArticulationCfg
 from isaaclab_assets import ANYDRIVE_3_SIMPLE_ACTUATOR_CFG
 
+ALPHABOT_JOINT_NAMES = [
+    "wheelLeft_joint",
+    "wheelRight_joint",
+]
+
 ALPHABOT_USD_PATH = os.path.join(
     os.path.dirname(__file__),
     "data/alphabot/alphabot2.usd"
@@ -20,10 +25,10 @@ ALPHABOT_CFG = ArticulationCfg(
     ),
     actuators={
         "left_wheel": ANYDRIVE_3_SIMPLE_ACTUATOR_CFG.replace(
-            joint_names_expr=["joint_left_wheel"],
+            joint_names_expr=ALPHABOT_JOINT_NAMES[0],
         ),
         "right_wheel": ANYDRIVE_3_SIMPLE_ACTUATOR_CFG.replace(
-            joint_names_expr=["joint_right_wheel"],
+            joint_names_expr=ALPHABOT_JOINT_NAMES[1],
         ),
     }
 )

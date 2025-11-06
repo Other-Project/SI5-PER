@@ -24,7 +24,7 @@ from isaaclab_assets import ANYDRIVE_3_SIMPLE_ACTUATOR_CFG  # isort: skip
 ##
 from isaaclab_assets import CRAZYFLIE_CFG  # isort: skip
 
-from ....assets import ALPHABOT_CFG
+from ....assets import ALPHABOT_CFG, ALPHABOT_JOINT_NAMES
 
 
 class CrazyflieEnvWindow(BaseEnvWindow):
@@ -150,7 +150,7 @@ class CrazyflieEnv(DirectRLEnv):
         self._robot_weight = (self._robot_mass * self._gravity_magnitude).item()
 
         # Initialize platform joint indices and velocities
-        self._platform_joint_indices = self._platform.find_joints(["joint_left_wheel", "joint_right_wheel"])[0]
+        self._platform_joint_indices = self._platform.find_joints([ALPHABOT_JOINT_NAMES[0], ALPHABOT_JOINT_NAMES[1]])[0]
         self._platform_wheel_vel = torch.zeros(self.num_envs, len(self._platform_joint_indices), device=self.device)
 
         # add handle for debug visualization (this is set to a valid handle inside set_debug_vis)
@@ -183,7 +183,7 @@ class CrazyflieEnv(DirectRLEnv):
     def _apply_action(self):
         self._robot.set_external_force_and_torque(self._thrust, self._moment, body_ids=self._body_id)
 
-        joint_indices = self._platform.find_joints(["joint_left_wheel", "joint_right_wheel"])[0]
+        joint_indices = self._platform.find_joints([ALPHABOT_JOINT_NAMES[0], ALPHABOT_JOINT_NAMES[1]])[0]
         self._platform.set_joint_velocity_target(self._platform_wheel_vel, joint_ids=joint_indices)
 
     def _update_platform_movement(self):
