@@ -15,10 +15,11 @@
     </material>
     <!-- * * * Link Definitions * * * -->
     <link name="bottom_plate">
+        <!-- estimated as a thin aluminum plate: r=0.055 m, h=0.003 m -->
         <inertial>
             <origin xyz="0 0 0" rpy="0 0 0" />
-            <mass value="0.5" />
-            <inertia ixx="0.002" ixy="0.0" ixz="0.0" iyy="0.002" iyz="0.0" izz="0.002" />
+            <mass value="0.08" />
+            <inertia ixx="0.00006056" ixy="0.0" ixz="0.0" iyy="0.00006056" iyz="0.0" izz="0.00012100" />
         </inertial>
         <visual>
             <origin xyz="0 0 0" rpy="0 0 0" />
@@ -35,10 +36,11 @@
         </collision>
     </link>
     <link name="body">
+        <!-- estimated as a plastic box: 0.09 x 0.06 x 0.04 m, density ~1200 kg/m^3 -->
         <inertial>
             <origin xyz="0 0 0" rpy="0 0 0" />
-            <mass value="0.3" />
-            <inertia ixx="0.001" ixy="0.0" ixz="0.0" iyy="0.001" iyz="0.0" izz="0.001" />
+            <mass value="0.26" />
+            <inertia ixx="0.00011267" ixy="0.0" ixz="0.0" iyy="0.00021017" iyz="0.0" izz="0.00025375" />
         </inertial>
         <visual>
             <geometry>
@@ -53,10 +55,11 @@
         </collision>
     </link>
     <link name="top_plate">
+        <!-- thin plastic plate (same geometry as bottom_plate), estimated mass ~0.034 kg -->
         <inertial>
             <origin xyz="0 0 0" rpy="0 0 0" />
-            <mass value="0.05" />
-            <inertia ixx="0.0001" ixy="0.0" ixz="0.0" iyy="0.0001" iyz="0.0" izz="0.0001" />
+            <mass value="0.0342" />
+            <inertia ixx="0.00002590" ixy="0.0" ixz="0.0" iyy="0.00002590" iyz="0.0" izz="0.00005177" />
         </inertial>
         <visual>
             <origin xyz="0 0 0" rpy="0 0 0" />
@@ -73,10 +76,11 @@
         </collision>
     </link>
     <link name="wheelLeft">
+        <!-- approximated solid wheel: r=0.022 m, L=0.025 m, mass ~0.04 kg -->
         <inertial>
             <origin xyz="0 0 0" rpy="0 0 0" />
-            <mass value="0.02" />
-            <inertia ixx="0.00001" ixy="0.0" ixz="0.0" iyy="0.00001" iyz="0.0" izz="0.00001" />
+            <mass value="0.04" />
+            <inertia ixx="0.0000069233" ixy="0.0" ixz="0.0" iyy="0.0000069233" iyz="0.0" izz="0.0000096800" />
         </inertial>
         <visual>
             <origin xyz="0 0 0" rpy="1.5708 0 0" />
@@ -93,10 +97,11 @@
         </collision>
     </link>
     <link name="wheelRight">
+        <!-- approximated solid wheel: r=0.022 m, L=0.025 m, mass ~0.04 kg -->
         <inertial>
             <origin xyz="0 0 0" rpy="0 0 0" />
-            <mass value="0.02" />
-            <inertia ixx="0.00001" ixy="0.0" ixz="0.0" iyy="0.00001" iyz="0.0" izz="0.00001" />
+            <mass value="0.04" />
+            <inertia ixx="0.0000069233" ixy="0.0" ixz="0.0" iyy="0.0000069233" iyz="0.0" izz="0.0000096800" />
         </inertial>
         <visual>
             <origin xyz="0 0 0" rpy="1.5708 0 0" />
@@ -113,10 +118,11 @@
         </collision>
     </link>
     <link name="casterFront">
+        <!-- small caster stem (plastic), very small mass -->
         <inertial>
             <origin xyz="0 0 0" rpy="0 0 0" />
-            <mass value="0.01" />
-            <inertia ixx="0.000001" ixy="0.0" ixz="0.0" iyy="0.000001" iyz="0.0" izz="0.000001" />
+            <mass value="0.00094" />
+            <inertia ixx="0.00000001371" ixy="0.0" ixz="0.0" iyy="0.00000001371" iyz="0.0" izz="0.00000001175" />
         </inertial>
         <visual>
             <origin xyz="0 0 0" rpy="0 0 0" />
@@ -133,10 +139,11 @@
         </collision>
     </link>
     <link name="casterBallFront">
+        <!-- small spherical caster ball -->
         <inertial>
             <origin xyz="0 0 0" rpy="0 0 0" />
-            <mass value="0.005" />
-            <inertia ixx="0.0000005" ixy="0.0" ixz="0.0" iyy="0.0000005" iyz="0.0" izz="0.0000005" />
+            <mass value="0.000628" />
+            <inertia ixx="0.00000000628" ixy="0.0" ixz="0.0" iyy="0.00000000628" iyz="0.0" izz="0.00000000628" />
         </inertial>
         <visual>
             <origin xyz="0 0 0" rpy="0 0 0" />
@@ -153,10 +160,11 @@
         </collision>
     </link>
     <link name="casterRear">
+        <!-- small caster stem (plastic), very small mass -->
         <inertial>
             <origin xyz="0 0 0" rpy="0 0 0" />
-            <mass value="0.01" />
-            <inertia ixx="0.000001" ixy="0.0" ixz="0.0" iyy="0.000001" iyz="0.0" izz="0.000001" />
+            <mass value="0.00094" />
+            <inertia ixx="0.00000001371" ixy="0.0" ixz="0.0" iyy="0.00000001371" iyz="0.0" izz="0.00000001175" />
         </inertial>
         <visual>
             <origin xyz="0 0 0" rpy="0 0 0" />
@@ -173,10 +181,11 @@
         </collision>
     </link>
     <link name="casterBallRear">
+        <!-- small spherical caster ball -->
         <inertial>
             <origin xyz="0 0 0" rpy="0 0 0" />
-            <mass value="0.005" />
-            <inertia ixx="0.0000005" ixy="0.0" ixz="0.0" iyy="0.0000005" iyz="0.0" izz="0.0000005" />
+            <mass value="0.000628" />
+            <inertia ixx="0.00000000628" ixy="0.0" ixz="0.0" iyy="0.00000000628" iyz="0.0" izz="0.00000000628" />
         </inertial>
         <visual>
             <origin xyz="0 0 0" rpy="0 0 0" />

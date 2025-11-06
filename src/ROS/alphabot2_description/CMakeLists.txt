@@ -20,10 +20,7 @@ endif()
 install(DIRECTORY
   launch
   config
-
-  urdf
-  meshes
-
+  urdf  
   DESTINATION share/${PROJECT_NAME}/
 )
 
