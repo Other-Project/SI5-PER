@@ -26,6 +26,13 @@ def generate_launch_description():
     launch_file = PythonLaunchDescriptionSource(os.path.join(pkg_project_alphabot2_gazebo, 'launch', 'spawn_alphabot2_gz.launch.py'))
     alphabot2 = IncludeLaunchDescription(launch_file)
 
+    position_robot = Node(
+        package="alphabot2_position",
+        executable="position",
+        name="position",
+        output="screen",
+        parameters=[{"robot_prefix": "alphabot2"}],
+    )
 
     position_drone = Node(
         package="crazyflie_position",
@@ -47,7 +54,7 @@ def generate_launch_description():
         ],
     )
 
-    return LaunchDescription([crazyflie_simulation, alphabot2, position_drone, control_drone])
+    return LaunchDescription([crazyflie_simulation, alphabot2, position_robot, position_drone, control_drone])
 
 
 def spawn_in_gazebo(

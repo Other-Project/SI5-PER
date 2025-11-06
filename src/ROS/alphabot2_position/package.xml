@@ -1,9 +1,9 @@
 <?xml version="1.0"?>
 <?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
 <package format="3">
-  <name>crazyflie_position</name>
+  <name>alphabot2_position</name>
   <version>0.0.0</version>
-  <description>Position reporting node for Crazyflie</description>
+  <description>Position reporting node for Alphabot2</description>
   <maintainer email="evan.galli@etu.univ-cotedazur.fr">Evan Galli</maintainer>
   <license>MIT</license>
 
