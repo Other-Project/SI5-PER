@@ -128,7 +128,8 @@ class CrazyflieEnv(DirectRLEnv):
         self._moment = torch.zeros(self.num_envs, 1, 3, device=self.device)
 
         # Platform wheel velocities for differential drive
-        self._platform_wheel_vel = torch.zeros(self.num_envs, 2, device=self.device)
+        self._platform_wheel_vel = None
+        self._platform_joint_indices = None
 
         # Goal position (platform center)
         self._desired_pos_w = torch.zeros(self.num_envs, 3, device=self.device)
@@ -147,6 +148,10 @@ class CrazyflieEnv(DirectRLEnv):
         self._robot_mass = self._robot.root_physx_view.get_masses()[0].sum()
         self._gravity_magnitude = torch.tensor(self.sim.cfg.gravity, device=self.device).norm()
         self._robot_weight = (self._robot_mass * self._gravity_magnitude).item()
+
+        # Initialize platform joint indices and velocities
+        self._platform_joint_indices = self._platform.find_joints(["joint_left_wheel", "joint_right_wheel"])[0]
+        self._platform_wheel_vel = torch.zeros(self.num_envs, len(self._platform_joint_indices), device=self.device)
 
         # add handle for debug visualization (this is set to a valid handle inside set_debug_vis)
         self.set_debug_vis(self.cfg.debug_vis)
@@ -179,7 +184,7 @@ class CrazyflieEnv(DirectRLEnv):
         self._robot.set_external_force_and_torque(self._thrust, self._moment, body_ids=self._body_id)
 
         joint_indices = self._platform.find_joints(["joint_left_wheel", "joint_right_wheel"])[0]
-        self._platform.set_joint_velocity_target(self._platform_wheel_vel, joint_indices=joint_indices)
+        self._platform.set_joint_velocity_target(self._platform_wheel_vel, joint_ids=joint_indices)
 
     def _update_platform_movement(self):
         """Update platform movement with simple random policy or patrol pattern."""
