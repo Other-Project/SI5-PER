@@ -1,184 +1,274 @@
-<?xml version="1.0" ?>
+<?xml version="1.0"?>
 <robot name="alphabot2" xmlns:xacro="http://www.ros.org/wiki/xacro">
-<!-- Colour definitions -->
-<material name="black">
-    <color rgba="0.03 0.03 0.03 1.0"/>
-</material>
-<material name="white">
-    <color rgba="0.8 0.8 0.8 1.0"/>
-</material>
-<material name="grey">
-    <color rgba="0.1 0.1 0.1 1.0"/>
-</material>
-<material name="blue">
-    <color rgba="0.203125 0.23828125 0.28515625 1.0"/>
-</material>
-<!-- * * * Link Definitions * * * -->
-<link name="base_link">
-      <visual>
-        <origin xyz="0 0 0" rpy="0 0 0"/>
-        <axis xyz="0 0 0" />
-        <geometry>
-            <cylinder radius="0.055" length="0.003"/>
-        </geometry>
-        <material name="blue"/>
-    </visual>
-</link>
-<link name="body">
-    <visual>
-        <geometry>
-            <box size="0.09 0.06 0.04"/>
-        </geometry>
-        <material name="grey"/>
-    </visual>
-</link>
-<link name="top">
-      <visual>
-        <origin xyz="0 0 0" rpy="0 0 0"/>
-        <axis xyz="0 0 0" />
-        <geometry>
-            <cylinder radius="0.055" length="0.003"/>
-        </geometry>
-        <material name="blue"/>
-    </visual>
-</link>
-<link name="wheelLeft">
-    <visual>
-        <origin xyz="0 0 0" rpy="1.5708 0 0"/>
-        <axis xyz="0 0 0.0" />
-        <geometry>
-            <cylinder radius="0.022" length="0.025"/>
-        </geometry>
-        <material name="black" />
-    </visual>
-</link>
-<link name="wheelRight">
-    <visual>
-        <origin xyz="0 0 0" rpy="1.5708 0 0"/>
-        <axis xyz="0 0 0.0" />
-        <geometry>
-            <cylinder radius="0.022" length="0.025"/>
-        </geometry>
-        <material name="black" />
-    </visual>
-</link>
-<link name="casterFront">
-    <visual>
-        <origin xyz="0 0 0" rpy="0 0 0"/>
-        <axis xyz="0 0 0.0" />
-        <geometry>
-            <cylinder radius="0.005" length="0.01"/>
-        </geometry>
-        <material name="white" />
-    </visual>
-</link>
-<link name="casterBallFront">
-    <visual>
-        <origin xyz="0 0 0" rpy="0 0 0"/>
-        <axis xyz="0 0 0.0" />
-        <geometry>
-            <sphere radius="0.005"/>
-        </geometry>
-        <material name="grey" />
-    </visual>
-</link>
-<link name="casterRear">
-    <visual>
-        <origin xyz="0 0 0" rpy="0 0 0"/>
-        <axis xyz="0 0 0.0" />
-        <geometry>
-            <cylinder radius="0.005" length="0.01"/>
-        </geometry>
-        <material name="white" />
-    </visual>
-</link>
-<link name="casterBallRear">
-    <visual>
-        <origin xyz="0 0 0" rpy="0 0 0"/>
-        <axis xyz="0 0 0.0" />
-        <geometry>
-            <sphere radius="0.005"/>
-        </geometry>
-        <material name="grey" />
-    </visual>
-</link>
-<!-- Body -->
-<joint name="body_joint" type="fixed">
-    <origin xyz="0 0 0.0215" rpy="0 0 0"/>
-    <parent link="base_link"/>
-    <child link="body"/>
-</joint>
-<joint name="top_joint" type="fixed">
-    <origin xyz="0 0 0.0215" rpy="0 0 0"/>
-    <parent link="body"/>
-    <child link="top"/>
-</joint>
-<joint name="casterFront_joint" type="fixed">
-    <origin xyz="0.05 0.0 -0.0065" rpy="0 0 0"/>
-    <parent link="base_link"/>
-    <child link="casterFront"/>
-</joint>
-<joint name="casterBallFront_joint" type="fixed">
-    <origin xyz="0.0 0.0 -0.003" rpy="0 0 0"/>
-    <parent link="casterFront"/>
-    <child link="casterBallFront"/>
-</joint>
-<joint name="casterRear_joint" type="fixed">
-    <origin xyz="-0.05 0.0 -0.0065" rpy="0 0 0"/>
-    <parent link="base_link"/>
-    <child link="casterRear"/>
-</joint>
-<joint name="casterBallRear_joint" type="fixed">
-    <origin xyz="0.0 0.0 -0.003" rpy="0 0 0"/>
-    <parent link="casterRear"/>
-    <child link="casterBallRear"/>
-</joint>
-<!-- Left Wheel Joint -->
-<joint name="wheelLeft_joint" type="continuous">
-    <origin xyz="0.0 0.04 0.007" rpy="0 0 0"/>
-    <axis xyz="0 1 0" />
-    <parent link="base_link"/>
-    <child link="wheelLeft"/> 
-    <limit effort="10000" velocity="1000"/>
-    <joint_properties damping="1.0" friction="1.0"/>
-</joint>
-<!-- Right Wheel Joint -->
-<joint name="wheelRight_joint" type="continuous">
-    <origin xyz="0.0 -0.04 0.007" rpy="0 0 0"/>
-    <axis xyz="0 1 0" />
-    <parent link="base_link"/>
-    <child link="wheelRight"/>
-    <limit effort="10000" velocity="1000"/>
-    <joint_properties damping="1.0" friction="1.0"/>
-</joint>
-<!-- Gazebo plugin for ROS Control -->
-<transmission name="tranRight">
-    <type>transmission_interface/SimpleTransmission</type>
-    <joint name="wheelRight">
-        <hardwareInterface>EffortJointInterface</hardwareInterface>
+    <!-- Colour definitions -->
+    <material name="black">
+        <color rgba="0.03 0.03 0.03 1.0" />
+    </material>
+    <material name="white">
+        <color rgba="0.8 0.8 0.8 1.0" />
+    </material>
+    <material name="grey">
+        <color rgba="0.1 0.1 0.1 1.0" />
+    </material>
+    <material name="blue">
+        <color rgba="0.203125 0.23828125 0.28515625 1.0" />
+    </material>
+    <!-- * * * Link Definitions * * * -->
+    <link name="bottom_plate">
+        <inertial>
+            <origin xyz="0 0 0" rpy="0 0 0" />
+            <mass value="0.5" />
+            <inertia ixx="0.002" ixy="0.0" ixz="0.0" iyy="0.002" iyz="0.0" izz="0.002" />
+        </inertial>
+        <visual>
+            <origin xyz="0 0 0" rpy="0 0 0" />
+            <geometry>
+                <cylinder radius="0.055" length="0.003" />
+            </geometry>
+            <material name="blue" />
+        </visual>
+        <collision>
+            <origin xyz="0 0 0" rpy="0 0 0" />
+            <geometry>
+                <cylinder radius="0.055" length="0.003" />
+            </geometry>
+        </collision>
+    </link>
+    <link name="body">
+        <inertial>
+            <origin xyz="0 0 0" rpy="0 0 0" />
+            <mass value="0.3" />
+            <inertia ixx="0.001" ixy="0.0" ixz="0.0" iyy="0.001" iyz="0.0" izz="0.001" />
+        </inertial>
+        <visual>
+            <geometry>
+                <box size="0.09 0.06 0.04" />
+            </geometry>
+            <material name="grey" />
+        </visual>
+        <collision>
+            <geometry>
+                <box size="0.09 0.06 0.04" />
+            </geometry>
+        </collision>
+    </link>
+    <link name="top_plate">
+        <inertial>
+            <origin xyz="0 0 0" rpy="0 0 0" />
+            <mass value="0.05" />
+            <inertia ixx="0.0001" ixy="0.0" ixz="0.0" iyy="0.0001" iyz="0.0" izz="0.0001" />
+        </inertial>
+        <visual>
+            <origin xyz="0 0 0" rpy="0 0 0" />
+            <geometry>
+                <cylinder radius="0.055" length="0.003" />
+            </geometry>
+            <material name="blue" />
+        </visual>
+        <collision>
+            <origin xyz="0 0 0" rpy="0 0 0" />
+            <geometry>
+                <cylinder radius="0.055" length="0.003" />
+            </geometry>
+        </collision>
+    </link>
+    <link name="wheelLeft">
+        <inertial>
+            <origin xyz="0 0 0" rpy="0 0 0" />
+            <mass value="0.02" />
+            <inertia ixx="0.00001" ixy="0.0" ixz="0.0" iyy="0.00001" iyz="0.0" izz="0.00001" />
+        </inertial>
+        <visual>
+            <origin xyz="0 0 0" rpy="1.5708 0 0" />
+            <geometry>
+                <cylinder radius="0.022" length="0.025" />
+            </geometry>
+            <material name="black" />
+        </visual>
+        <collision>
+            <origin xyz="0 0 0" rpy="1.5708 0 0" />
+            <geometry>
+                <cylinder radius="0.022" length="0.025" />
+            </geometry>
+        </collision>
+    </link>
+    <link name="wheelRight">
+        <inertial>
+            <origin xyz="0 0 0" rpy="0 0 0" />
+            <mass value="0.02" />
+            <inertia ixx="0.00001" ixy="0.0" ixz="0.0" iyy="0.00001" iyz="0.0" izz="0.00001" />
+        </inertial>
+        <visual>
+            <origin xyz="0 0 0" rpy="1.5708 0 0" />
+            <geometry>
+                <cylinder radius="0.022" length="0.025" />
+            </geometry>
+            <material name="black" />
+        </visual>
+        <collision>
+            <origin xyz="0 0 0" rpy="1.5708 0 0" />
+            <geometry>
+                <cylinder radius="0.022" length="0.025" />
+            </geometry>
+        </collision>
+    </link>
+    <link name="casterFront">
+        <inertial>
+            <origin xyz="0 0 0" rpy="0 0 0" />
+            <mass value="0.01" />
+            <inertia ixx="0.000001" ixy="0.0" ixz="0.0" iyy="0.000001" iyz="0.0" izz="0.000001" />
+        </inertial>
+        <visual>
+            <origin xyz="0 0 0" rpy="0 0 0" />
+            <geometry>
+                <cylinder radius="0.005" length="0.01" />
+            </geometry>
+            <material name="white" />
+        </visual>
+        <collision>
+            <origin xyz="0 0 0" rpy="0 0 0" />
+            <geometry>
+                <cylinder radius="0.005" length="0.01" />
+            </geometry>
+        </collision>
+    </link>
+    <link name="casterBallFront">
+        <inertial>
+            <origin xyz="0 0 0" rpy="0 0 0" />
+            <mass value="0.005" />
+            <inertia ixx="0.0000005" ixy="0.0" ixz="0.0" iyy="0.0000005" iyz="0.0" izz="0.0000005" />
+        </inertial>
+        <visual>
+            <origin xyz="0 0 0" rpy="0 0 0" />
+            <geometry>
+                <sphere radius="0.005" />
+            </geometry>
+            <material name="grey" />
+        </visual>
+        <collision>
+            <origin xyz="0 0 0" rpy="0 0 0" />
+            <geometry>
+                <sphere radius="0.005" />
+            </geometry>
+        </collision>
+    </link>
+    <link name="casterRear">
+        <inertial>
+            <origin xyz="0 0 0" rpy="0 0 0" />
+            <mass value="0.01" />
+            <inertia ixx="0.000001" ixy="0.0" ixz="0.0" iyy="0.000001" iyz="0.0" izz="0.000001" />
+        </inertial>
+        <visual>
+            <origin xyz="0 0 0" rpy="0 0 0" />
+            <geometry>
+                <cylinder radius="0.005" length="0.01" />
+            </geometry>
+            <material name="white" />
+        </visual>
+        <collision>
+            <origin xyz="0 0 0" rpy="0 0 0" />
+            <geometry>
+                <cylinder radius="0.005" length="0.01" />
+            </geometry>
+        </collision>
+    </link>
+    <link name="casterBallRear">
+        <inertial>
+            <origin xyz="0 0 0" rpy="0 0 0" />
+            <mass value="0.005" />
+            <inertia ixx="0.0000005" ixy="0.0" ixz="0.0" iyy="0.0000005" iyz="0.0" izz="0.0000005" />
+        </inertial>
+        <visual>
+            <origin xyz="0 0 0" rpy="0 0 0" />
+            <geometry>
+                <sphere radius="0.005" />
+            </geometry>
+            <material name="grey" />
+        </visual>
+        <collision>
+            <origin xyz="0 0 0" rpy="0 0 0" />
+            <geometry>
+                <sphere radius="0.005" />
+            </geometry>
+        </collision>
+    </link>
+    <!-- Body -->
+    <joint name="body_joint" type="fixed">
+        <origin xyz="0 0 0.0215" rpy="0 0 0" />
+        <parent link="bottom_plate" />
+        <child link="body" />
     </joint>
-    <actuator name="motorRight">
-        <hardwareInterface>EffortJointInterface</hardwareInterface>
-        <mechanicalReduction>1</mechanicalReduction>
-    </actuator>
-</transmission>
-<transmission name="tranLeft">
-    <type>transmission_interface/SimpleTransmission</type>
-    <joint name="jointLeft">
-        <hardwareInterface>EffortJointInterface</hardwareInterface>
+    <joint name="top_joint" type="fixed">
+        <origin xyz="0 0 0.0215" rpy="0 0 0" />
+        <parent link="body" />
+        <child link="top_plate" />
     </joint>
-    <actuator name="motorLeft">
-        <hardwareInterface>EffortJointInterface</hardwareInterface>
-        <mechanicalReduction>1</mechanicalReduction>
-    </actuator>
-</transmission>
+    <joint name="casterFront_joint" type="fixed">
+        <origin xyz="0.05 0.0 -0.0065" rpy="0 0 0" />
+        <parent link="bottom_plate" />
+        <child link="casterFront" />
+    </joint>
+    <joint name="casterBallFront_joint" type="fixed">
+        <origin xyz="0.0 0.0 -0.003" rpy="0 0 0" />
+        <parent link="casterFront" />
+        <child link="casterBallFront" />
+    </joint>
+    <joint name="casterRear_joint" type="fixed">
+        <origin xyz="-0.05 0.0 -0.0065" rpy="0 0 0" />
+        <parent link="bottom_plate" />
+        <child link="casterRear" />
+    </joint>
+    <joint name="casterBallRear_joint" type="fixed">
+        <origin xyz="0.0 0.0 -0.003" rpy="0 0 0" />
+        <parent link="casterRear" />
+        <child link="casterBallRear" />
+    </joint>
+    <!-- Left Wheel Joint -->
+    <joint name="wheelLeft_joint" type="continuous">
+        <origin xyz="0.0 0.04 0.007" rpy="0 0 0" />
+        <axis xyz="0 1 0" />
+        <parent link="bottom_plate" />
+        <child link="wheelLeft" />
+        <limit effort="10000" velocity="1000" />
+        <dynamics damping="1.0" friction="1.0" />
+    </joint>
+    <!-- Right Wheel Joint -->
+    <joint name="wheelRight_joint" type="continuous">
+        <origin xyz="0.0 -0.04 0.007" rpy="0 0 0" />
+        <axis xyz="0 1 0" />
+        <parent link="bottom_plate" />
+        <child link="wheelRight" />
+        <limit effort="10000" velocity="1000" />
+        <dynamics damping="1.0" friction="1.0" />
+    </joint>
+    <!-- Gazebo plugin for ROS Control -->
+    <transmission name="tranRight">
+        <type>transmission_interface/SimpleTransmission</type>
+        <joint name="wheelRight_joint">
+            <hardwareInterface>EffortJointInterface</hardwareInterface>
+        </joint>
+        <actuator name="motorRight">
+            <hardwareInterface>EffortJointInterface</hardwareInterface>
+            <mechanicalReduction>1</mechanicalReduction>
+        </actuator>
+    </transmission>
+    <transmission name="tranLeft">
+        <type>transmission_interface/SimpleTransmission</type>
+        <joint name="wheelLeft_joint">
+            <hardwareInterface>EffortJointInterface</hardwareInterface>
+        </joint>
+        <actuator name="motorLeft">
+            <hardwareInterface>EffortJointInterface</hardwareInterface>
+            <mechanicalReduction>1</mechanicalReduction>
+        </actuator>
+    </transmission>
 
-  <gazebo>
-    <plugin filename="gz-sim-diff-drive-system" name="gz::sim::systems::DiffDrive">
-      <left_joint>wheelLeft_joint</left_joint>
-      <right_joint>wheelRight_joint</right_joint>
-      <wheel_separation>0.07</wheel_separation>
-      <wheel_radius>0.01</wheel_radius>
-    </plugin>
-  </gazebo>
+    <gazebo>
+        <plugin filename="gz-sim-diff-drive-system" name="gz::sim::systems::DiffDrive">
+            <left_joint>wheelLeft_joint</left_joint>
+            <right_joint>wheelRight_joint</right_joint>
+            <wheel_separation>0.07</wheel_separation>
+            <wheel_radius>0.01</wheel_radius>
+        </plugin>
+    </gazebo>
 </robot>
