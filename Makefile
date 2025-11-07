@@ -18,3 +18,6 @@ teleop:
 
 clean:
 	rm -R .out/
+
+isaac:
+	python utils/run_helper.py
