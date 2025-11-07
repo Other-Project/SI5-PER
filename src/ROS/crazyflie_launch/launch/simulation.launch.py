@@ -56,16 +56,7 @@ def generate_launch_description():
         ],
     )
 
-    joy_config = os.path.join(get_package_share_directory('teleop_twist_joy'), 'config', 'xbox.config.yaml')
-    joy = Node(
-        package='joy', executable='joy_node', name='joy_node',
-        parameters=[{
-            'device_id': 0,
-            'deadzone': 0.3,
-            'autorepeat_rate': 20.0,
-    }, joy_config])
-
-    return LaunchDescription([gazebo_launch, crazyflie, alphabot2, position_robot, position_drone, control_drone, joy])
+    return LaunchDescription([gazebo_launch, crazyflie, alphabot2, position_robot, position_drone, control_drone])
 
 
 def include_launch_file(package: str, launch_file_name: str, namespace: str) -> GroupAction:

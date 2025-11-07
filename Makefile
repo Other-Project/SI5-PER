@@ -23,7 +23,12 @@ teleop_bot:
 
 teleop_drone_joy:
 	source /opt/ros/*/setup.bash && \
-	ros2 launch teleop_twist_joy teleop-launch.py joy_config:='xbox'
+	ros2 launch teleop_twist_joy teleop-launch.py config_filepath:="$(CURDIR)/utils/xone.config.yaml" joy_vel:='crazyflie/input_cmd_vel'
+
+teleop_bot_joy:
+	source /opt/ros/*/setup.bash && \
+	ros2 launch teleop_twist_joy teleop-launch.py config_filepath:="$(CURDIR)/utils/xone.config.yaml" joy_vel:='alphabot2/input_cmd_vel'
+
 
 clean:
 	rm -R .out/
