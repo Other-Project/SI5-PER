@@ -12,13 +12,17 @@ ros_term: ros
 	source .out/ros_install/setup.bash && \
 	bash
 
-teleop:
+teleop_drone:
 	source /opt/ros/*/setup.bash && \
 	ros2 run teleop_twist_keyboard teleop_twist_keyboard
 
 teleop_bot:
 	source /opt/ros/*/setup.bash && \
 	ros2 run teleop_twist_keyboard teleop_twist_keyboard --ros-args --remap cmd_vel:=alphabot2/cmd_vel
+
+teleop_drone_joy:
+	source /opt/ros/*/setup.bash && \
+	ros2 launch teleop_twist_joy teleop-launch.py joy_config:='xbox'
 
 clean:
 	rm -R .out/
