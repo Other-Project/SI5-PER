@@ -17,9 +17,9 @@
 #  3 : Y
 #  4 : LB
 #  5 : RB
-#  6 : Back
-#  7 : Start
-#  8 : ?
+#  6 : View (left from guide)
+#  7 : Menu (right from guide)
+#  8 : Guide (center Xbox logo)
 #  9 : Left stick press
 # 10 : Right stick press
 

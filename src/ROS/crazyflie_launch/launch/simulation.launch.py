@@ -3,48 +3,50 @@ import os
 from ament_index_python.packages import get_package_share_directory
 
 from launch import LaunchDescription
-from launch.actions import IncludeLaunchDescription, GroupAction
+from launch.actions import IncludeLaunchDescription, GroupAction, AppendEnvironmentVariable
 from launch.launch_description_sources import PythonLaunchDescriptionSource
-from launch.conditions import IfCondition
-from launch.substitutions import LaunchConfiguration, PathJoinSubstitution
+from launch.substitutions import LaunchConfiguration
 
 from launch_ros.actions import Node, SetRemap
-import xacro
 
 
 def generate_launch_description():
     """Configure ROS nodes for launch"""
+    ld = LaunchDescription()
+    use_sim_time = LaunchConfiguration('use_sim_time', default='true')
 
     # Start Gazebo Harmonic (empty world)
-    gazebo_launch = IncludeLaunchDescription(
+    ld.add_action(IncludeLaunchDescription(
         PythonLaunchDescriptionSource(
             os.path.join(
                 get_package_share_directory("ros_gz_sim"), "launch", "gz_sim.launch.py"
             )
         ),
         launch_arguments={"gz_args": "-r empty.sdf"}.items(),
-    )
-    crazyflie = include_launch_file('crazyflie_description', 'spawn_crazyflie_gz.launch.py', 'crazyflie') # Spawn crazyflie in Gazebo
-    alphabot2 = include_launch_file('ab2_gazebo', 'spawn_ab2.launch.py', 'alphabot2') # Spawn alphabot2 in Gazebo
+    ))
+    ld.add_action(AppendEnvironmentVariable('GZ_SIM_RESOURCE_PATH', os.path.join(get_package_share_directory('ab2_gazebo'), 'models')))
+    
+    ld.add_action(include_launch_file('crazyflie_description', 'spawn_crazyflie_gz.launch.py', 'crazyflie')) # Spawn crazyflie in Gazebo
+    ld.add_action(include_launch_file('ab2_gazebo', 'spawn_ab2.launch.py', 'alphabot2')) # Spawn alphabot2 in Gazebo
 
 
-    position_robot = Node(
+    ld.add_action(Node(
         package="alphabot2_position",
         executable="position",
         name="position",
         output="screen",
         parameters=[{"robot_prefix": "alphabot2"}],
-    )
+    ))
 
-    position_drone = Node(
+    ld.add_action(Node(
         package="crazyflie_position",
         executable="position",
         name="position",
         output="screen",
         parameters=[{"robot_prefix": "crazyflie"}],
-    )
+    ))
 
-    control_drone = Node(
+    ld.add_action(Node(
         package="crazyflie_control",
         executable="control_services",
         output="screen",
@@ -54,9 +56,26 @@ def generate_launch_description():
             {"incoming_twist_topic": "/crazyflie/input_cmd_vel"},
             {"max_ang_z_rate": 0.4},
         ],
-    )
+    ))
+    
+    ld.add_action(IncludeLaunchDescription(
+        PythonLaunchDescriptionSource(
+            os.path.join(get_package_share_directory('ab2_gazebo'), 'launch', 'robot_state_publisher.launch.py')
+        ),
+        launch_arguments={'use_sim_time': use_sim_time, 'frame_prefix': 'alphabot2'}.items()
+    ))
 
-    return LaunchDescription([gazebo_launch, crazyflie, alphabot2, position_robot, position_drone, control_drone])
+    # ld.add_action(Node(
+    #     package='rviz2',
+    #     executable='rviz2',
+    #     name='rviz2',
+    #     output='screen',
+    #     namespace='alphabot2',
+    #     parameters=[{'use_sim_time': use_sim_time}],
+    #     arguments=['-d', os.path.join(get_package_share_directory('ab2_gazebo'), 'rviz', 'ab2_gazebo.rviz')]
+    # ))
+
+    return ld
 
 
 def include_launch_file(package: str, launch_file_name: str, namespace: str) -> GroupAction:
@@ -71,24 +90,3 @@ def include_launch_file(package: str, launch_file_name: str, namespace: str) -> 
             )
         ))
     ])
-
-def spawn_in_gazebo(
-    name: str, robot_description_config: str, pos: tuple[float, float, float]
-) -> Node:
-    return Node(
-        package="ros_gz_sim",
-        executable="create",
-        arguments=[
-            "-name",
-            name,
-            "-string",
-            robot_description_config,
-            "-x",
-            str(pos[0]),  # X position
-            "-y",
-            str(pos[1]),  # Y position
-            "-z",
-            str(pos[2]),  # Z position (height)
-        ],
-        output="screen",
-    )
