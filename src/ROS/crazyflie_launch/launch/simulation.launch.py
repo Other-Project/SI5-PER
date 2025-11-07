@@ -15,16 +15,18 @@ import xacro
 def generate_launch_description():
     """Configure ROS nodes for launch"""
 
-    # Setup to launch a crazyflie gazebo simulation from the ros_gz_crazyflie project
-    pkg_project_crazyflie_gazebo = get_package_share_directory('crazyflie_description')
-    launch_file = PythonLaunchDescriptionSource(os.path.join(pkg_project_crazyflie_gazebo, 'launch', 'spawn_crazyflie_gz.launch.py'))
-    crazyflie_simulation = IncludeLaunchDescription(launch_file)
+    # Start Gazebo Harmonic (empty world)
+    gazebo_launch = IncludeLaunchDescription(
+        PythonLaunchDescriptionSource(
+            os.path.join(
+                get_package_share_directory("ros_gz_sim"), "launch", "gz_sim.launch.py"
+            )
+        ),
+        launch_arguments={"gz_args": "-r empty.sdf"}.items(),
+    )
+    crazyflie = include_launch_file('crazyflie_description', 'spawn_crazyflie_gz.launch.py') # Spawn crazyflie in Gazebo
+    alphabot2 = include_launch_file('ab2_gazebo', 'spawn_ab2.launch.py') # Spawn alphabot2 in Gazebo
 
-
-    # Spawn alphabot2 in Gazebo
-    pkg_project_alphabot2_gazebo = get_package_share_directory('alphabot2_description')
-    launch_file = PythonLaunchDescriptionSource(os.path.join(pkg_project_alphabot2_gazebo, 'launch', 'spawn_alphabot2_gz.launch.py'))
-    alphabot2 = IncludeLaunchDescription(launch_file)
 
     position_robot = Node(
         package="alphabot2_position",
@@ -54,8 +56,26 @@ def generate_launch_description():
         ],
     )
 
-    return LaunchDescription([crazyflie_simulation, alphabot2, position_robot, position_drone, control_drone])
+    joy_config = os.path.join(get_package_share_directory('teleop_twist_joy'), 'config', 'xbox.config.yaml')
+    joy = Node(
+        package='joy', executable='joy_node', name='joy_node',
+        parameters=[{
+            'device_id': 0,
+            'deadzone': 0.3,
+            'autorepeat_rate': 20.0,
+    }, joy_config])
 
+    return LaunchDescription([gazebo_launch, crazyflie, alphabot2, position_robot, position_drone, control_drone, joy])
+
+
+def include_launch_file(package: str, launch_file_name: str) -> IncludeLaunchDescription:
+    return IncludeLaunchDescription(PythonLaunchDescriptionSource(
+        os.path.join(
+            get_package_share_directory(package),
+            "launch",
+            launch_file_name,
+        )
+    ))
 
 def spawn_in_gazebo(
     name: str, robot_description_config: str, pos: tuple[float, float, float]
