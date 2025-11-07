@@ -19,7 +19,7 @@ class ControlServices(Node):
         incoming_twist_topic = self.get_parameter('incoming_twist_topic').value
         max_ang_z_rate = self.get_parameter('max_ang_z_rate').value
 
-        self.publisher_ = self.create_publisher(Twist, robot_prefix + incoming_twist_topic, 10)
+        self.publisher_ = self.create_publisher(Twist, robot_prefix + '/cmd_vel', 10)
         self.subscriber = self.create_subscription(Odometry, robot_prefix + '/odom', self.odometry_callback, 10)
         self.subscriber = self.create_subscription(Twist, incoming_twist_topic, self.cmd_vel_callback, 10)
         self.timer = self.create_timer(0.1, self.timer_callback)

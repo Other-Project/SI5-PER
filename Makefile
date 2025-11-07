@@ -15,11 +15,11 @@ ros_term: ros
 
 teleop_drone:
 	source /opt/ros/*/setup.bash && \
-	ros2 run teleop_twist_keyboard teleop_twist_keyboard
+	ros2 run teleop_twist_keyboard teleop_twist_keyboard --ros-args --remap cmd_vel:=crazyflie/input_cmd_vel
 
 teleop_bot:
 	source /opt/ros/*/setup.bash && \
-	ros2 run teleop_twist_keyboard teleop_twist_keyboard --ros-args --remap cmd_vel:=alphabot2/cmd_vel
+	ros2 run teleop_twist_keyboard teleop_twist_keyboard --ros-args --remap cmd_vel:=alphabot2/input_cmd_vel
 
 teleop_drone_joy:
 	source /opt/ros/*/setup.bash && \

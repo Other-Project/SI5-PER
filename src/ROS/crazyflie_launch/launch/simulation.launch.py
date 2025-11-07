@@ -3,12 +3,12 @@ import os
 from ament_index_python.packages import get_package_share_directory
 
 from launch import LaunchDescription
-from launch.actions import IncludeLaunchDescription
+from launch.actions import IncludeLaunchDescription, GroupAction
 from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch.conditions import IfCondition
 from launch.substitutions import LaunchConfiguration, PathJoinSubstitution
 
-from launch_ros.actions import Node
+from launch_ros.actions import Node, SetRemap
 import xacro
 
 
@@ -24,8 +24,8 @@ def generate_launch_description():
         ),
         launch_arguments={"gz_args": "-r empty.sdf"}.items(),
     )
-    crazyflie = include_launch_file('crazyflie_description', 'spawn_crazyflie_gz.launch.py') # Spawn crazyflie in Gazebo
-    alphabot2 = include_launch_file('ab2_gazebo', 'spawn_ab2.launch.py') # Spawn alphabot2 in Gazebo
+    crazyflie = include_launch_file('crazyflie_description', 'spawn_crazyflie_gz.launch.py', 'crazyflie') # Spawn crazyflie in Gazebo
+    alphabot2 = include_launch_file('ab2_gazebo', 'spawn_ab2.launch.py', 'alphabot2') # Spawn alphabot2 in Gazebo
 
 
     position_robot = Node(
@@ -51,7 +51,7 @@ def generate_launch_description():
         parameters=[
             {"hover_height": 0.5},
             {"robot_prefix": "/crazyflie"},
-            {"incoming_twist_topic": "/cmd_vel"},
+            {"incoming_twist_topic": "/crazyflie/input_cmd_vel"},
             {"max_ang_z_rate": 0.4},
         ],
     )
@@ -68,14 +68,18 @@ def generate_launch_description():
     return LaunchDescription([gazebo_launch, crazyflie, alphabot2, position_robot, position_drone, control_drone, joy])
 
 
-def include_launch_file(package: str, launch_file_name: str) -> IncludeLaunchDescription:
-    return IncludeLaunchDescription(PythonLaunchDescriptionSource(
-        os.path.join(
-            get_package_share_directory(package),
-            "launch",
-            launch_file_name,
-        )
-    ))
+def include_launch_file(package: str, launch_file_name: str, namespace: str) -> GroupAction:
+    return GroupAction(
+    actions=[
+        SetRemap(src='/cmd_vel', dst=f'/{namespace}/input_cmd_vel'),
+        IncludeLaunchDescription(PythonLaunchDescriptionSource(
+            os.path.join(
+                get_package_share_directory(package),
+                "launch",
+                launch_file_name,
+            )
+        ))
+    ])
 
 def spawn_in_gazebo(
     name: str, robot_description_config: str, pos: tuple[float, float, float]
