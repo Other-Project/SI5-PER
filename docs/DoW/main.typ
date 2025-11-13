@@ -8,6 +8,7 @@
     )
   ])
 #show heading.where(level: 1): set heading(numbering: "I.")
+#show strong: set text(weight: "light")
 
 #grid(columns: (1fr, 1fr), align: (left + horizon, right + horizon),
   image("uca.png", height: 1.5cm),
@@ -41,158 +42,149 @@
 
 = Résumé exécutif
 
-Ce projet vise à développer un système de contrôle collaboratif permettant à un nano-drone (Crazyflie 2.1+) d'atterrir de manière autonome sur une plateforme mobile (Waveshare AlphaBot2). Contrairement aux approches unilatérales classiques, notre solution coordonne les trajectoires des deux robots pour optimiser le temps et la précision de l'atterrissage.
+Ce projet vise à concevoir un système collaboratif permettant à un nano-drone de type Crazyflie 2.1+ d’atterrir de manière autonome sur une plateforme mobile de type Waveshare AlphaBot2. 
 
-La stratégie de guidage sera développée par apprentissage par renforcement profond (Deep Reinforcement Learning) au sein de l'environnement NVIDIA IsaacSim/IsaacLab. L'architecture système reposera sur ROS 2 Humble pour assurer la communication temps-réel et la synchronisation des données d'odométrie entre les agents.
+L’objectif est de développer, sous l’environnement ROS 2 Jazzy, un ensemble de modules logiciels assurant la communication et la coordination entre le drone et la plateforme afin d’obtenir un atterrissage précis et sûr, même en mouvement.
 
-*Livrables attendus :*
+Le drone sera équipé de capteurs embarqués (Flow Deck v2 pour estimer la vitesse et la hauteur), tandis que la plateforme mobile disposera potentiellement d’une caméra horizontale capable de suivre la position du drone. Ces informations seront combinées pour définir en temps réel la trajectoire du drone en rapport avec la plateforme.
 
-*Environnement de simulation complet :* Configuration d'IsaacSim/IsaacLab 
-intégrant le Crazyflie 2.1+ et la plateforme mobile omnidirectionnelle. 
-La plateforme sera équipée virtuellement d'une caméra horizontale et 
-de capteurs d'odométrie réalistes.
+La stratégie de guidage sera apprise à l’aide d’algorithmes d’apprentissage par renforcement profond (Deep Reinforcement Learning) dans un environnement de simulation avancé (NVIDIA IsaacSim couplé à IsaacLab). Les performances seront ensuite évaluées dans Gazebo afin d’étudier le transfert des modèles entre différents simulateurs (sim2sim), puis sur les systèmes réels pour analyser les écarts entre la simulation et la réalité (sim2real).
 
-*Modèle de contrôle par Deep Reinforcement Learning  (Deep RL) :* Obtention d'une politique de contrôle coordonnée capable d'assurer un atterrissage dynamique avec un taux de réussite supérieur à 80% en simulation. Le modèle utilisera les observations d'odométrie relative et les données inertielles des deux robots.
-
-*Validation du transfert Sim2Sim :* Évaluation de la robustesse du modèle en le déployant dans l'environnement Gazebo. Cette étape permettra d'identifier les premières limitations avant le passage au matériel réel.
-
-*Analyse du reality gap (Sim2Real) :* Déploiement expérimental sur le matériel physique et documentation détaillée des écarts observés (latences, imprécisions capteurs, effets aérodynamiques non modélisés).
-L'objectif n'est pas la performance absolue mais la caractérisation rigoureuse du reality gap et l'identification de pistes d'amélioration (domain randomization, fine-tuning adaptatif).
-
-Ce projet contribue à la recherche sur les systèmes multi-robots hétérogènes en explorant méthodiquement les défis du transfert de modèles de contrôle appris en simulation vers des plateformes matérielles réelles (Sim2Real), un problème ouvert majeur en robotique par apprentissage.
-
+Les résultats attendus incluent la mise en œuvre complète d’une architecture collaborative sous ROS 2, la création d’environnements de simulation réalistes et le développement d’une méthode d’apprentissage robuste pour le guidage et l’atterrissage autonome.
 
 = Description du projet
 
 == Contexte technologique
 
-*Nano-drone Crazyflie 2.1+ :* C’est un nano-drone modulaire et open-source de 27g, utilisé en recherche pour l'expérimentation en robotique distribuée et en contrôle embarqué. Le drone sera équipé des decks suivants : Flow Deck v2 (estimation de mouvement par flux optique et télémètre) et Multi-ranger Deck (détection d'obstacles multidirectionnelle). Communication radio via Crazyradio PA.
-(====Partie tirée de nos discutions à confirmer===)
+- Le Crazyflie 2.1+, un nano-drone open-source et modulaire de 29 g, utilisé pour la recherche en robotique embarquée. Équipé du Flow Deck v2 et du Multi-ranger Deck, il peut estimer son mouvement et détecter les obstacles dans plusieurs directions.
 
-*Plateforme mobile AlphaBot2 :* Robot mobile omnidirectionnel équipé de quatre roues mecanum permettant des déplacements dans toutes les directions sans rotation. La plateforme intégrera une caméra horizontale pour la détection du drone et un système d'odométrie roues-encodeurs pour estimer sa position. Contrôle via Raspberry Pi avec ROS 2 Humble.
-(====Caméra suffisant à confirmer===)
+- L’AlphaBot2, un robot mobile compact à deux roues motrices. Il intégrera, si besoin, une caméra. Sa commande est assurée par une Raspberry Pi, offrant une grande flexibilité pour le développement sous ROS 2.
 
-*ROS 2 Humble :* Middleware robotique permettant la communication 
-distribuée entre les composants logiciels. Architecture basée sur des 
-topics pour la publication/souscription des données capteurs : 
-  - `/drone/odom` : Position (X, Y, Z) et orientation (roll, pitch, yaw) du drone
-  - `/platform/odom` : Position (X, Y) et vitesse de la plateforme
-  - `/relative_pose` : Position relative calculée entre les deux agents
-  - `/cmd_vel` : Commandes de vitesse pour chaque robot
+- ROS 2 (Jazzy), un middleware open-source dédié à la robotique, facilitant la communication et la coordination entre les différents composants logiciels et matériels des deux plateformes.
 
-*NVIDIA IsaacSim/IsaacLab :* Environnement de simulation physique GPU-accelerated basé sur Omniverse. IsaacLab fournit un framework spécialisé pour l'apprentissage par renforcement profond avec support 
-natif d'algorithmes classiques (PPO, SAC, TD3). L'accélération GPU permet d'exécuter des milliers d'environnements en parallèle, réduisant drastiquement le temps d'entraînement comparé aux approches séquentielles traditionnelles.
-  
-*Gazebo :* Simulateur robotique open-source utilisé pour la validation Sim2Sim. Permet de tester la robustesse du modèle dans un environnement physique différent avant le déploiement réel.
+- NVIDIA IsaacSim / IsaacLab, des environnements de simulation permettent de modéliser avec précision la physique des robots et d’entraîner des modèles de contrôle grâce à l’apprentissage par renforcement profond, en exploitant la puissance de calcul des GPU.
+
+- Gazebo, un simulateur robotique open-source utilisé pour valider les modèles et tester leur comportement dans un environnement virtuel avant le déploiement réel.
+
+- RViz, un outil de visualisation 3D intégré à ROS 2, permettant de suivre en temps réel les trajectoires, les capteurs et l’état des robots.
 
 
-== Motivations scientifiques et techniques
+== Motivations
 
-*Collaboration interactive vs. atterrissage unilatéral :* 
-La majorité des travaux existants sur l'atterrissage de drones sur plateformes mobiles adoptent une approche unilatérale où seul le drone ajuste sa trajectoire tandis que la plateforme suit un chemin prédéfini. 
-Notre projet explore une coordination bidirectionnelle où les deux agents négocient leurs trajectoires pour optimiser le temps et la précision d'atterrissage. Cette approche est cruciale pour des applications réelles comme le rechargement mobile autonome ou la logistique multi-domaines.
+- Développer un système collaboratif entre un nano-drone et une plateforme mobile pour réaliser un atterrissage autonome.
 
+- Concevoir et intégrer sous ROS 2 les modules de guidage, perception et communication nécessaires au guidage précis.
 
-*Contribution à la recherche sur le Sim2Real :*
-Le transfert de politiques apprises en simulation vers le monde réel (Sim2Real) reste un défi majeur en robotique par apprentissage. Notre projet contribue à cette problématique en :
-- Quantifiant méthodiquement le reality gap sur une tâche de coordination dynamique
-- Comparant deux environnements de simulation (IsaacSim vs Gazebo) pour évaluer la variabilité Sim2Sim
-- Identifiant les sources principales d'écart (latences, imprécisions capteurs, effets aérodynamiques)
+- Apprendre et tester une stratégie de guidage collaborative dans un environnement simulé (IsaacSim, Gazebo) avant son déploiement réel.
 
-*Optimisation temporelle par Time Optimal Control :*
-Le projet vise à générer des trajectoires minimales en temps tout en respectant les contraintes dynamiques des deux robots. Cette approche garantit un processus d'atterrissage efficient, critère essentiel pour des applications 
-énergétiquement contraintes.
+- Étudier le transfert des comportements entre simulation et réalité afin de réduire le reality gap.
 
+- Contribuer à la recherche en robotique autonome et fournir une plateforme expérimentale pour des applications futures (coopération multi-robots, navigation autonome, etc.).
 
-*Optimisation pour l'Edge Computing embarqué :*
-(=====à confirmer, il me semble que ce soit pour ça qu'on attend la carte NVIDIA===)
-L'exécution d'inférence de modèles Deep RL en temps-réel sur des plateformes embarquées à ressources contraintes est un défi pour le déploiement réel de systèmes autonomes. Dans le contexte de notre 
-projet, la plateforme mobile AlphaBot2 pourrait être équipée d'une carte de calcul embarquée (type NVIDIA Jetson Nano) pour exécuter localement le modèle de décision.
-
-
-== Objectifs du projet
+== Objectifs à atteindre
 
 === Objectif principal
 
-Développer, sous ROS 2 Humble, un système de contrôle collaboratif permettant l'atterrissage autonome du Crazyflie 2.1+ sur la plateforme mobile AlphaBot2 
-en mouvement. La stratégie de guidage sera apprise par renforcement profond (Deep RL) dans l'environnement NVIDIA IsaacSim couplé à IsaacLab.
+Développer, sous ROS 2 Jazzy, un système de contrôle collaboratif permettant l'atterrissage autonome du Crazyflie 2.1+ sur la plateforme mobile AlphaBot2. La stratégie de guidage sera apprise par renforcement profond (Deep RL) dans l'environnement NVIDIA IsaacSim couplé à IsaacLab.
 
+#pagebreak()
 
 === Objectifs secondaires
 
-Conformément au sujet, le projet comportera les étapes suivantes :
+- *Plateforme en mouvement* : L’objectif est de prendre en compte la dynamique de l’AlphaBot2 afin de maintenir une coordination stable avec le drone durant toute la phase d’atterrissage. Cela implique de concevoir un modèle capable d’adapter en temps réel la trajectoire du drone aux changements de vitesse et de direction de la plateforme mobile.
+- *Edge computing embarqué* : Une partie du traitement des données pourrait être déployée directement sur la plateforme mobile pour réduire la latence de communication et ainsi accélérer la prise de décision et assurer une meilleure synchronisation entre le drone et l’AlphaBot2.
+- *Évitement d’obstacles* : Ajouter au système la capacité de détecter tout obstacle potentiel sur la trajectoire d’approche du drone grâce aux capteurs embarqués pour  adapter automatiquement son plan de vol afin de contourner l’obstacle sans compromettre la stabilité ni la précision de l’atterrissage.
+- *Gestion de la distance initiale* : Prévoir une stratégie permettant au drone de localiser et rejoindre la plateforme mobile lorsqu’ils sont initialement éloignés.
 
-*Architecture ROS 2 et plateformes collaboratives :* Développement des nœuds de contrôle et de communication permettant la coordination entre le Crazyflie et l'AlphaBot2, incluant l'exploitation de la caméra horizontale et du Flow v2 Deck.
-
-*Environnements de simulation et apprentissage :* Configuration d'IsaacSim/IsaacLab pour l'entraînement d'un modèle de décision par Deep RL, avec intégration des capteurs nécessaires.
-
-*Validation Sim2Sim :* Déploiement et test du modèle dans Gazebo pour analyser les problématiques de transfert entre simulateurs.
-
-*Validation Sim2Real et analyse du reality gap :* Déploiement sur matériel réel (Crazyflie 2.1 + AlphaBot2) avec caractérisation quantitative des écarts simulation/réalité.
-
-L'évaluation portera prioritairement sur la démarche méthodologique et l'analyse du reality gap plutôt que sur la performance absolue en conditions réelles.
-
-  
-
- 
 == Risques identifiés (et contre-mesures)
 
-*1. Complexité du Sim2Real* : Le transfert des modèles appris en simulation vers le matériel réel est un défi majeur compte tenu de l'ensemble des événements imprévus dans la réalité qui ne peuvent pas être appris en simulation.
+=== 1. Complexité du Sim2Real
 
-*Contre-mesure *: L'accent sera mis sur l'analyse et la compréhension des déviations (pourquoi ça ne marche pas), et l'utilisation de techniques comme la randomisation du domaine pour augmenter la robustesse
+Le transfert des modèles appris en simulation vers le matériel réel est un défi majeur compte tenu de l'ensemble des événements imprévus dans la réalité qui ne peuvent pas être appris en simulation.
 
+*Contre-mesure *: L'accent sera mis sur l'analyse et la compréhension des déviations (pourquoi ça ne marche pas).
 
-*2. Difficulté des rewards* : La définition des fonctions de rewards est complexe, surtout pour des comportements précis comme l'atterrissage dynamique.
+=== 2. Écart entre l’odométrie calculée et la position réelle de l’AlphaBot2
 
-*Contre-mesure *: S'appuyer sur le modèle de rewards du quad copter existant dans Isaac Lab et réfléchir en amont aux observations supplémentaire nécessaires (odomètrie relative, position)
+L’odométrie de la plateforme (estimation de la position) sera basée sur la rotation des roues. Cependant, la position estimée par l’odométrie peut avec le temps, diverger significativement de la position réelle, ce qui affecte la précision de la trajectoire du drone et la qualité de la coordination entre les deux systèmes.
 
+*Contre-mesure :* La caméra embarquée sur la plateforme permettra de recalibrer la position estimée à chaque détection du drone, compensant ainsi les erreurs cumulées d’odométrie
 
+=== 3. Effet de sol et mouvement de la plateforme pendant l’atterrissage
 
-*3. Synchronisation et Données : * Assurer la communication et la synchronisation des données d’odométrie entre le drone et la plateforme mobile via ROS.
+Le flux d’air généré par le drone lorsqu’il vole très près d'une surface crée un effet de sol, qui modifie la portance et peut déséquilibrer l’appareil, surtout pour les nano-drones en raison de leur faible masse. Il est alors courant de couper net les moteurs à une hauteur fixe.
 
-*Contre-mesure *: Définir clairement les topiques ROS nécessaires (position X, Y, Z, inclinaison) et faire l'hypothèse d'une condition initiale où les deux robots sont localisés l'un par rapport à l'autre.
+Cependant, si la plateforme d’atterrissage est en mouvement, cette méthode devient problématique puisque couper les moteurs à une hauteur fixe peut réduire la précision et faire manquer la plateforme.
 
-*4. Modélisation et intégration de la plateforme mobile :* L'instanciation du robot mobile AlphaBot2 et son contrôle indépendant dans IsaacSim peut être un défi.
-
-*Contre-mesure :* Commencer par instancier un modèle existant simple (comme le Turtle Bot 3) dans Gazebo/IsaacSim pour vérifier la faisabilité du contrôle multi-robot. S'assurer que les observations sont correctement associées à chaque robot.
-
-
+*Contre-mesure :* Ajouter des ouvertures ou trous sur la surface de la plateforme pour dissiper la surpression d’air et limiter l’effet de sol.
+Ou encore, fournir au drone la vitesse et la direction de la plateforme afin qu’il puisse prédire sa trajectoire et ajuster la sienne pour se positionner en amont.
 
 == Scenarios
 
-[Décrivez 2 à 3 scénarios d’utilisation de votre projet. Ces scénarios doivent être montrés du point de vue des utilisateurs du système que vous construirez. Pour chaque scénario, vous soulignerez les critères d’acceptation, qui servent à prouver que le système permet l’exécution de ces scénarios. Maximum deux pages.]
+== Scénario 1 : Test de validation en environnement contrôlé
+
+==== Contexte d'utilisation
+Un ingénieur en robotique ou chercheur souhaite démontrer la faisabilité technique du système collaboratif avant de l'intégrer dans des applications plus complexes. Il dispose d'un espace intérieur sécurisé (laboratoire, gymnase) et veut vérifier que le drone peut effectivement atterrir sur la plateforme mobile en mouvement.
+
+==== Déroulement
+
+1. L'utilisateur démarre le système ROS 2 sur l'AlphaBot2 et initialise le Crazyflie 2.1+
+2. Via une interface de commande, il programme une trajectoire circulaire simple pour l'AlphaBot2
+3. Le drone décolle et se stabilise à une hauteur de 1.5m au-dessus de la zone
+4. L'utilisateur lance la commande d'atterrissage autonome
+5. Le système collaboratif s'active : la caméra de l'AlphaBot2 détecte le drone, calcule sa position relative et transmet cette information
+6. Le drone ajuste sa trajectoire en temps réel en fonction du mouvement de la plateforme
+7. L'atterrissage s'effectue sur la surface de l'AlphaBot2
+8. L'utilisateur consulte les logs ROS et visualise la trajectoire dans RViz pour analyser les performances
+
+==== Critères d'acceptation
+- Le taux de réussite d'atterrissage doit être supérieur à 85% sur 20 tentatives consécutives
+- La précision de positionnement à l'atterrissage est inférieure à 1 cm du centre de la plateforme
+- Aucune collision ou perte de contrôle n'est observée durant la manœuvre
+- Les données de télémétrie (position, vitesse, commandes) sont correctement enregistrées et exploitables pour l'analyse
+
+== Scénario 2 : Récupération d'urgence avec évitement d'obstacles
+
+==== Contexte d'utilisation
+Une équipe de maintenance technique utilise le drone pour effectuer une mission d'inspection dans une zone encombrée (présence d'étagères, de machines, de câbles suspendus). 
+L'AlphaBot2 sert de plateforme de récupération mobile pouvant naviguer dans l'environnement encombré jusqu'à proximité du drone.
+
+==== Déroulement
+1. À la fin de sa mission d'inspection, le drone se positionne en vol stationnaire à 2 m de hauteur en attendant la récupération
+2. L'utilisateur envoie l'AlphaBot2 vers la zone via une commande de navigation autonome
+3. Une fois à portée, la caméra de l'AlphaBot2 détecte le drone et initialise la phase de guidage collaboratif
+4. Le drone commence sa descente en s'alignant progressivement avec la plateforme mobile
+5. Durant l'approche, le Multi-ranger Deck du drone détecte une étagère
+6. Le système d'évitement d'obstacles ajuste automatiquement la trajectoire du drone pour contourner l'obstacle par le côté
+7. L'AlphaBot2 adapte également sa position pour maintenir l'alignement avec le nouveau plan de vol du drone
+8. L'atterrissage final s'effectue avec succès malgré la présence d'obstacles environnants
+9. L'utilisateur récupère le drone en ramenant l'AlphaBot2 à la station de base
+
+==== Critères d'acceptation
+- La trajectoire alternative calculée permet d'éviter l'obstacle tout en convergeant vers la plateforme 
+- Le système maintient la coordination entre le drone et la plateforme durant toute la manœuvre d'évitement  
+- Les logs permettent de reconstituer la trajectoire complète incluant les points d'évitement 
 
 = Mise en en œuvre
-(quel#text(fill: red)[que]s paragraphes, utilisez des bulles)
 
-Liste d'activités déjà réalisé#text(fill: red)[e]s avant les semaines à plein temps
+== Liste d'activités à réaliser avant les semaines à plein temps
 
-- Configuration ROS/Crazyflie : Installation de l'environnement ROS, permettant de faire fonctionner les tutoriels de base du Crazyflie et d'accéder aux topiques des données capteurs (odométrie, distance).
+- Configuration de ROS et d'IsaacSim/IsaacLab
+- Entraînement simple d'un drone pour un vol stable (avec la création d'une fonction de récompense adaptée)
+- Coordination des deux systèmes dans IsaacSim/Gazebo
+- Mise en place des nœuds ROS nécessaires à la captation des données, à l'inférence et au contrôle des dispositifs
+- Entraînement du drone sur une plateforme fixe avec initialisation aléatoire, puis sur une plateforme en mouvement
 
-- Configuration IsaacSim/IsaacLab : Installation du framework et vérification de la compatibilité matérielle.
+== Listes d’activités prévues durant les semaines à plein temps
 
-• P.O.C. DeepRL : Entraînement réussi du modèle DeepRL par défaut dans IsaacLab, impliquant l'atterrissage d'un quadcoptère sur un cube statique.
+- Aboutissement du travail effectué en amont
+- Test du drone en situation réelle pour évaluer les écarts du Sim2Real
+- Réalisation des objectifs secondaires (évitement d'obstacle, edge computing, etc.) selon le temps restant
+ 
+== Organisation du travail (répartition de l'équipe)
 
-• Analyse du Modèle : Identification des 12 observations (vélocité linéaire/angulaire, distance relative au but) et des 4 actions (puissance, mouvements X Y Z) utilisées par le quadcoptère par défaut dans IsaacLab.
-
-
-
-
-Listes d’activités prévues pour chaque semaine à plein temps
-
-
-
-
-
-
-
-
-
-
-
-Organisation du travail (répartition de l'équipe)
 Le travail est organisé entre les 4 membres du groupe selon leurs mineurs :
 
-• Mineur IA-ID (Environnement Simulation & DeepRL) : Prend en charge l'installation, la modélisation de la plateforme mobile  dans IsaacSim/Lab, la modification des tasks et des rewards, et l'entraînement du modèle DeepRL.
+- Mineur IA-ID : Instanciation de la plateforme mobile dans IsaacSim/Lab, entraînement du modèle DeepRL (fonction de récompense, observations nécessaires) et la vérification Sim2Sim (Gazebo).
 
-• Mineur IoT-CPS (Systèmes Robotiques & ROS) : Prend en charge l'architecture ROS 2, le développement du nœud de calcul de position relative, la vérification Sim2Sim (Gazebo), et le setup matériel de l'AlphaBot2 
+- Mineur IoT-CPS : Mise en place de l'architecture ROS 2 (le développement du nœud de calcul de position relative, la mise en place du nœud d'inférence, etc.), et le setup matériel.
