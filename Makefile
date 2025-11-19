@@ -31,4 +31,4 @@ isaac:
 	python ./utils/run_helper.py
 
 clean:
-	rm -R .out/
+	rm -rf .out/
