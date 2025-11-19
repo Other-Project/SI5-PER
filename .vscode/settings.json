@@ -1,10 +1,11 @@
 {
-    "files.insertFinalNewline": true,
-    "python.analysis.extraPaths": [
-        "/opt/ros/jazzy/lib/python3.12/site-packages/"
-    ],
-    "cmake.ignoreCMakeListsMissing": true,
-      "urdf-visualizer.packages": {
-      "ab2_description": "deps/Alphabot2/ab2_description"
+  "files.insertFinalNewline": true,
+  "python.analysis.extraPaths": [
+      "/opt/ros/jazzy/lib/python3.12/site-packages/",
+      "src/ROS/.venv/lib/python3.11/site-packages/"
+  ],
+  "cmake.ignoreCMakeListsMissing": true,
+  "urdf-visualizer.packages": {
+    "ab2_description": "deps/Alphabot2/ab2_description"
   }
 }

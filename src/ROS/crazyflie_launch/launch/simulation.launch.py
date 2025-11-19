@@ -47,6 +47,19 @@ def generate_launch_description():
     # ))
 
     ld.add_action(Node(
+        package="crazyflie_landing",
+        executable="rl_model",
+        name="rl_model",
+        output="screen",
+        parameters=[
+            {"onnx_path": os.path.join(
+                get_package_share_directory("crazyflie_launch"),
+                "config/crazyflie_policy.onnx",
+            )},
+        ],
+    ))
+
+    ld.add_action(Node(
         package="crazyflie_control",
         executable="control_services",
         output="screen",
