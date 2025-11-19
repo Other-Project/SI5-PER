@@ -207,6 +207,7 @@ class CrazyflieEnv(DirectRLEnv):
 
     def _get_observations(self) -> dict:
         self._desired_pos_w = self._platform.data.root_pos_w.clone()
+        self._desired_pos_w[:, 2] += 0.1
         desired_pos_b, _ = subtract_frame_transforms(
             self._robot.data.root_pos_w, self._robot.data.root_quat_w, self._desired_pos_w
         )
