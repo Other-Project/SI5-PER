@@ -1,0 +1,10 @@
+[project]
+name = "ros"
+version = "0.1.0"
+description = "ROS packages"
+requires-python = ">=3.11"
+dependencies = [
+    "cflib>=0.1.29",
+    "numpy>=2.3.5",
+    "onnxruntime>=1.23.2",
+]
