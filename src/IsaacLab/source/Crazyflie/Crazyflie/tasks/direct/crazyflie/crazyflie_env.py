@@ -131,6 +131,9 @@ class CrazyflieEnv(DirectRLEnv):
         self._platform_wheel_vel = None
         self._platform_joint_indices = None
 
+        # Platform target velocities (linear and angular)
+        self._platform_target_lin_vel = torch.rand(self.num_envs, 3, device=self.device) / 2.0
+
         # Goal position (platform center)
         self._desired_pos_w = torch.zeros(self.num_envs, 3, device=self.device)
 
@@ -187,7 +190,6 @@ class CrazyflieEnv(DirectRLEnv):
         self._actions = actions.clone().clamp(-1.0, 1.0)
         self._thrust[:, 0, 2] = self.cfg.thrust_to_weight * self._robot_weight * (self._actions[:, 0] + 1.0) / 2.0
         self._moment[:, 0, :] = self.cfg.moment_scale * self._actions[:, 1:]
-        self._update_platform_movement()
 
     def _apply_action(self):
         self._robot.set_external_force_and_torque(self._thrust, self._moment, body_ids=self._body_id)
@@ -196,16 +198,12 @@ class CrazyflieEnv(DirectRLEnv):
             self._platform_wheel_vel,
             joint_ids=self._platform_joint_indices
         )
+        # Change the platform position based on its velocity
+        dt = self.sim.cfg.dt * self.cfg.decimation
+        new_platform_pos = self._platform.data.root_pos_w + self._platform_target_lin_vel * dt
+        new_platform_quat = self._platform.data.root_quat_w
+        self._platform.write_root_pose_to_sim(torch.cat([new_platform_pos, new_platform_quat], dim=-1))
 
-    def _update_platform_movement(self):
-        """Update platform movement with simple random policy or patrol pattern."""
-        if self.common_step_counter % 50 == 0:
-            random_linear = (torch.rand(self.num_envs,
-                                        device=self.device) - 0.5) * 2.0 * self.cfg.platform_max_linear_velocity
-            random_angular = (torch.rand(self.num_envs,
-                                         device=self.device) - 0.5) * 2.0 * self.cfg.platform_max_angular_velocity
-            self._platform_wheel_vel[:, 0] = random_linear - random_angular
-            self._platform_wheel_vel[:, 1] = random_linear + random_angular
 
     def _get_observations(self) -> dict:
         self._desired_pos_w = self._platform.data.root_pos_w.clone()
@@ -268,6 +266,7 @@ class CrazyflieEnv(DirectRLEnv):
 
         num_envs_to_reset = len(env_ids)
 
+        # Reset platform position
         random_xy = (torch.rand(num_envs_to_reset, 2,
                                 device=self.device) - 0.5) * 2.0 * self.cfg.platform_spawn_range_xy
         random_z = torch.full((num_envs_to_reset, 1), self.cfg.platform_spawn_z, device=self.device)
@@ -280,6 +279,15 @@ class CrazyflieEnv(DirectRLEnv):
         default_root_state_platform[:, 6] = torch.sin(random_yaw / 2.0)  # z
         self._platform.write_root_pose_to_sim(default_root_state_platform[:, :7], env_ids)
         self._platform_wheel_vel[env_ids] = 0.0
+
+        # Set random linear velocity for the platform
+        random_lin_vel_x = (torch.rand(num_envs_to_reset,
+                                       device=self.device) - 0.5) * self.cfg.platform_max_linear_velocity
+        random_lin_vel_y = (torch.rand(num_envs_to_reset,
+                                       device=self.device) - 0.5) * self.cfg.platform_max_linear_velocity
+        self._platform_target_lin_vel[env_ids, 0] = random_lin_vel_x
+        self._platform_target_lin_vel[env_ids, 1] = random_lin_vel_y
+        self._platform_target_lin_vel[env_ids, 2] = 0.0
 
         self._robot.reset(env_ids)
         super()._reset_idx(env_ids)
