@@ -1,10 +1,11 @@
-import rclpy
-from rclpy.node import Node
-import onnxruntime as ort
 import numpy as np
-from .utils import angular_vel, gravity_in_body
+import onnxruntime as ort
+import rclpy
 from geometry_msgs.msg import Twist
 from nav_msgs.msg import Odometry
+from rclpy.node import Node
+
+from .utils import angular_vel, gravity_in_body
 
 
 class RLModelNode(Node):
