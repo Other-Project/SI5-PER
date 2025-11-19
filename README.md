@@ -8,10 +8,12 @@
 2. Install ROS (Jazzy) and Gazebo (Harmonic).  
     An helper script is available for Ubuntu: `utils/install.sh`
 
+3. [Install uv](https://docs.astral.sh/uv/#installation) for managing Python dependencies
+
 ## Usage
 
 * `make ros`: Builds ROS packages
 * `make sim`: Starts the Gazebo simulation
 * `make teleop`: Manually control the drone
 * `make clean`: Removes the build artifacts
-* `make issac`: Starts a train or evaluation session in Isaac Sim
+* `make isaac`: Starts a train or evaluation session in Isaac Sim
