@@ -31,6 +31,8 @@ parser.add_argument(
     "--distributed", action="store_true", default=False, help="Run training with multiple GPUs or nodes."
 )
 parser.add_argument("--export_io_descriptors", action="store_true", default=False, help="Export IO descriptors.")
+parser.add_argument("--export_onnx", action="store_true", default=False,
+                    help="Export policy to ONNX after training.")
 # append RSL-RL cli arguments
 cli_args.add_rsl_rl_args(parser)
 # append AppLauncher cli args
@@ -95,6 +97,7 @@ from isaaclab_rl.rsl_rl import RslRlBaseRunnerCfg, RslRlVecEnvWrapper
 import isaaclab_tasks  # noqa: F401
 from isaaclab_tasks.utils import get_checkpoint_path
 from isaaclab_tasks.utils.hydra import hydra_task_config
+from isaaclab_rl.rsl_rl import export_policy_as_onnx
 
 import Crazyflie.tasks  # noqa: F401
 
@@ -201,6 +204,26 @@ def main(env_cfg: ManagerBasedRLEnvCfg | DirectRLEnvCfg | DirectMARLEnvCfg, agen
 
     # run training
     runner.learn(num_learning_iterations=agent_cfg.max_iterations, init_at_random_ep_len=True)
+
+    if args_cli.export_onnx:
+        try:
+            policy = runner.alg.policy
+            obs_normalizer = runner.alg.obs_normalizer if hasattr(runner.alg, 'obs_normalizer') else None
+
+            export_policy_as_onnx(
+                policy=policy,
+                path=log_dir,
+                normalizer=obs_normalizer,
+                filename="crazyflie_policy.onnx",
+                verbose=True
+            )
+
+            print(f"Policy exported successfully to {log_dir}/crazyflie_policy.onnx")
+
+        except Exception as e:
+            print(f"Failed to export policy to ONNX format: {e}")
+            import traceback
+            traceback.print_exc()
 
     # close the simulator
     env.close()
