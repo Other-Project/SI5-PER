@@ -1,9 +1,10 @@
 import math
 import numpy as np
 
-def quaternion_to_euler( qx, qy, qz, qw):
+
+def quaternion_to_euler(qx, qy, qz, qw):
     """
-    Convert quaternion (qx, qy, qz, qw) to Euler angles (roll, pitch, yaw) 
+    Convert quaternion (qx, qy, qz, qw) to Euler angles (roll, pitch, yaw)
     """
     sinr_cosp = 2.0 * (qw * qx + qy * qz)
     cosr_cosp = 1.0 - 2.0 * (qx * qx + qy * qy)
@@ -19,6 +20,7 @@ def quaternion_to_euler( qx, qy, qz, qw):
     cosy_cosp = 1.0 - 2.0 * (qy * qy + qz * qz)
     yaw = math.atan2(siny_cosp, cosy_cosp)
     return roll, pitch, yaw
+
 
 def body_rates_to_euler_rates(p, q, r, roll, pitch):
     """
@@ -39,6 +41,7 @@ def body_rates_to_euler_rates(p, q, r, roll, pitch):
     psi_dot = (sin_r / cos_p) * q + (cos_r / cos_p) * r
     return phi_dot, theta_dot, psi_dot
 
+
 def angular_vel(current_orientation, angular_twist):
     """
     Return angular velocities expressed as Euler rates (roll_rate, pitch_rate, yaw_rate)
@@ -47,17 +50,21 @@ def angular_vel(current_orientation, angular_twist):
     roll, pitch, yaw = body_rates_to_euler_rates(angular_twist.x, angular_twist.y, angular_twist.z, roll, pitch)
     return [roll, pitch, yaw]
 
+
 def gravity_in_body(current_orientation, g=9.81):
     """
     Return the gravity vector expressed in the body frame
     """
     x, y, z, w = current_orientation.x, current_orientation.y, current_orientation.z, current_orientation.w
     # rotation matrix R (body -> world) constructed from quaternion (w,x,y,z)
-    R = np.array([
-        [1 - 2*(y*y + z*z),     2*(x*y - z*w),       2*(x*z + y*w)],
-        [2*(x*y + z*w),         1 - 2*(x*x + z*z),   2*(y*z - x*w)],
-        [2*(x*z - y*w),         2*(y*z + x*w),       1 - 2*(x*x + y*y)]
-    ], dtype=float)
+    R = np.array(
+        [
+            [1 - 2 * (y * y + z * z), 2 * (x * y - z * w), 2 * (x * z + y * w)],
+            [2 * (x * y + z * w), 1 - 2 * (x * x + z * z), 2 * (y * z - x * w)],
+            [2 * (x * z - y * w), 2 * (y * z + x * w), 1 - 2 * (x * x + y * y)],
+        ],
+        dtype=float,
+    )
     # vecteur gravité dans le monde ; si votre convention est NED (z vers le bas) adaptez le signe
     g_world = np.array([0.0, 0.0, -g], dtype=float)
     # projeter dans le repère corps

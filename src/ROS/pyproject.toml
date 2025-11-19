@@ -9,3 +9,11 @@ dependencies = [
     "numpy>=2.3.5",
     "onnxruntime>=1.23.2",
 ]
+
+[dependency-groups]
+dev = [
+    "ruff>=0.14.5",
+]
+
+[tool.ruff]
+line-length = 140

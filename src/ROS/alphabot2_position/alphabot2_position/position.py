@@ -1,12 +1,11 @@
 import rclpy
 from rclpy.node import Node
 from nav_msgs.msg import Odometry
-from geometry_msgs.msg import Vector3, Transform, TransformStamped, Twist
+from geometry_msgs.msg import Vector3, Transform, TransformStamped
 from std_msgs.msg import Header
 
 
 class Position(Node):
-    
     def __init__(self):
         super().__init__("alphabot2_position")
 
@@ -19,31 +18,26 @@ class Position(Node):
         self.rotation = None
 
         # Subs
-        self.odom_subscriber = self.create_subscription(
-            Odometry, robot_prefix + "/odometry", self.odom_subscribe_callback, 10
-        )
+        self.odom_subscriber = self.create_subscription(Odometry, robot_prefix + "/odometry", self.odom_subscribe_callback, 10)
 
         # Publishers
-        self.publisher_position = self.create_publisher(
-            TransformStamped, "robot_position", 10
-        )
+        self.publisher_position = self.create_publisher(TransformStamped, "robot_position", 10)
 
-        self.get_logger().info(f"Position node has been loaded")
+        self.get_logger().info("Position node has been loaded")
 
     def odom_subscribe_callback(self, msg: Odometry):
         """Callback for odometry subscription"""
-        self.get_logger().debug(f"Received odometry msg")
+        self.get_logger().debug("Received odometry msg")
         self.position = msg.pose.pose.position
         self.rotation = msg.pose.pose.orientation
         self.send_transform()
-
 
     def send_transform(self):
         header = Header(stamp=self.get_clock().now().to_msg(), frame_id="world")
         out = TransformStamped(header=header)
         vect = Vector3(x=self.position.x, y=self.position.y, z=self.position.z)
         out.transform = Transform(translation=vect, rotation=self.rotation)
-        self.get_logger().debug(f"Sending transform msg")
+        self.get_logger().debug("Sending transform msg")
         self.publisher_position.publish(out)
 
 
