@@ -22,7 +22,7 @@ def generate_launch_description():
                 get_package_share_directory("ros_gz_sim"), "launch", "gz_sim.launch.py"
             )
         ),
-        launch_arguments={"gz_args": "-r empty.sdf"}.items(),
+        launch_arguments={"gz_args": "-v 4 -r empty.sdf"}.items(),
     ))
     ld.add_action(AppendEnvironmentVariable('GZ_SIM_RESOURCE_PATH', os.path.join(get_package_share_directory('ab2_gazebo'), 'models')))
     
@@ -46,30 +46,30 @@ def generate_launch_description():
     #     parameters=[{"robot_prefix": "crazyflie"}],
     # ))
 
-    ld.add_action(Node(
-        package="crazyflie_landing",
-        executable="rl_model",
-        name="rl_model",
-        output="screen",
-        parameters=[
-            {"onnx_path": os.path.join(
-                get_package_share_directory("crazyflie_launch"),
-                "config/crazyflie_policy.onnx",
-            )},
-        ],
-    ))
-
     # ld.add_action(Node(
-    #     package="crazyflie_control",
-    #     executable="control_services",
+    #     package="crazyflie_landing",
+    #     executable="rl_model",
+    #     name="rl_model",
     #     output="screen",
     #     parameters=[
-    #         {"hover_height": 0.5},
-    #         {"robot_prefix": "/crazyflie"},
-    #         {"incoming_twist_topic": "/crazyflie/input_cmd_vel"},
-    #         {"max_ang_z_rate": 0.4},
+    #         {"onnx_path": os.path.join(
+    #             get_package_share_directory("crazyflie_launch"),
+    #             "config/crazyflie_policy.onnx",
+    #         )},
     #     ],
     # ))
+
+    ld.add_action(Node(
+        package="crazyflie_control",
+        executable="control_services",
+        output="screen",
+        parameters=[
+            {"hover_height": 0.5},
+            {"robot_prefix": "/crazyflie"},
+            {"incoming_twist_topic": "/crazyflie/input_cmd_vel"},
+            {"max_ang_z_rate": 0.4},
+        ],
+    ))
     
     ld.add_action(IncludeLaunchDescription(
         PythonLaunchDescriptionSource(

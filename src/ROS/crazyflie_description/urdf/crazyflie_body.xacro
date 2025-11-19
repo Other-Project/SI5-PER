@@ -96,6 +96,34 @@
     <child link="base_link"/>
   </joint>
 
+  <!-- Laser sensor link -->
+  <link name="laser_link">
+    <inertial>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <mass value="0.001"/>
+      <inertia ixx="0.0001" iyy="0.0001" izz="0.0001" ixy="0" ixz="0" iyz="0"/>
+    </inertial>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <box size="0.01 0.01 0.01"/>
+      </geometry>
+    </collision>
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <box size="0.01 0.01 0.01"/>
+      </geometry>
+    </visual>
+  </link>
+
+  <!-- Joint between body and laser -->
+  <joint name="body_to_laser" type="fixed">
+    <parent link="base_link"/>
+    <child link="laser_link"/>
+    <origin xyz="0 0 0.04" rpy="0 0 0"/>
+  </joint>
+
   <!-- Joints between body and props -->
   <joint name="body_to_m1_prop" type="continuous">
     <parent link="base_link"/>
@@ -229,5 +257,43 @@
       name="gz::sim::systems::OdometryPublisher">
       <dimensions>3</dimensions>
     </plugin>
+
+    <!-- Sensors system plugin - REQUIRED for sensor data -->
+    <plugin
+      filename="gz-sim-sensors-system"
+      name="gz::sim::systems::Sensors">
+      <render_engine>ogre2</render_engine>
+    </plugin>
+  </gazebo>
+
+  <!-- LiDAR sensor attached to laser_link -->
+  <gazebo reference="laser_link">
+    <sensor name="lidar_sensor" type="gpu_lidar">
+      <topic>/lidar</topic>
+      <update_rate>10</update_rate>
+      <always_on>true</always_on>
+      <visualize>true</visualize>
+      <frame_id>laser_link</frame_id>
+      <lidar>
+        <scan>
+          <horizontal>
+            <samples>360</samples>
+            <resolution>1</resolution>
+            <min_angle>-3.14159</min_angle>
+            <max_angle>3.14159</max_angle>
+          </horizontal>
+        </scan>
+        <range>
+          <min>0.08</min>
+          <max>10.0</max>
+          <resolution>0.01</resolution>
+        </range>
+        <noise>
+          <type>gaussian</type>
+          <mean>0.0</mean>
+          <stddev>0.01</stddev>
+        </noise>
+      </lidar>
+    </sensor>
   </gazebo>
 </robot>

@@ -23,6 +23,18 @@ def generate_launch_description():
         description="Name of the robot"
     )
 
+    # Robot State Publisher (publishes TF transforms)
+    robot_state_publisher = Node(
+        package="robot_state_publisher",
+        executable="robot_state_publisher",
+        name="robot_state_publisher",
+        output="screen",
+        parameters=[{
+            "robot_description": robot_description_config,
+            "frame_prefix": "crazyflie/",
+        }],
+    )
+
     # Spawn robot in Gazebo
     spawn_robot = Node(
         package="ros_gz_sim",
@@ -49,6 +61,7 @@ def generate_launch_description():
 
     return LaunchDescription([
         robot_name_arg,
+        robot_state_publisher,
         spawn_robot,
         bridge,
     ])

@@ -1,2 +1,20 @@
 .out/
 .idea/
+
+# colcon / catkin build artefacts
+/build/
+/install/
+/log/
+/.out/
+/.ros/
+/.venv/
+/venv/
+/__pycache__/
+/*.pyc
+
+# editor files
+.vscode/
+*.swp
+
+# OS
+.DS_Store
