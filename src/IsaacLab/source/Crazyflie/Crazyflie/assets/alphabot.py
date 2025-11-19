@@ -8,8 +8,8 @@ ACTUATORS_LEFT_WHEEL = "left_wheel"
 ACTUATORS_RIGHT_WHEEL = "right_wheel"
 
 ALPHABOT_JOINTS_NAMES = {
-    ACTUATORS_LEFT_WHEEL: "wheel_left_joint",
-    ACTUATORS_RIGHT_WHEEL: "wheel_right_joint"
+    ACTUATORS_LEFT_WHEEL: "joint_left_wheel",
+    ACTUATORS_RIGHT_WHEEL: "joint_right_wheel",
 }
 
 ALPHABOT_USD_PATH = os.path.join(
