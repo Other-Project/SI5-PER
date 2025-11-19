@@ -14,3 +14,4 @@
 * `make sim`: Starts the Gazebo simulation
 * `make teleop`: Manually control the drone
 * `make clean`: Removes the build artifacts
+* `make issac`: Starts a train or evaluation session in Isaac Sim
