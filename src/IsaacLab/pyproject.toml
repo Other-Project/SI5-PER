@@ -5,6 +5,7 @@ description = "Model training using NVIDIA Isaac Sim"
 requires-python = "~=3.11.0"
 dependencies = [
     "isaacsim[all,extscache]==5.1.0",
+    "isaaclab[all,isaacsim]==2.3.0",
     "questionary>=2.1.1",
     "torch==2.7.0",
     "torchvision==0.22.0",
@@ -16,6 +17,7 @@ index-strategy = "unsafe-best-match"
 [tool.uv.sources]
 torch = { index = "pytorch" }
 torchvision = { index = "pytorch" }
+isaaclab = { index = "nvidia" }
 isaacsim = { index = "nvidia" }
 
 [[tool.uv.index]]
