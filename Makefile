@@ -46,4 +46,4 @@ clean:
 	rm -R .out/
 	
 mr_proper: clean
-	rm -R src/ROS/.venv/
+	rm -R src/ROS/.venv/ src/IsaacLab/.venv/
