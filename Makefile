@@ -47,6 +47,3 @@ clean:
 
 mr_proper: clean
 	rm -R src/ROS/.venv/ src/IsaacLab/.venv/
-
-isaac:
-	python utils/run_helper.py
