@@ -1,6 +1,6 @@
 """Asset configurations for Crazyflie project."""
 
-from source.Crazyflie.Crazyflie.assets.alphabot import ALPHABOT_CFG, ALPHABOT_USD_PATH, ALPHABOT_JOINTS_NAMES, \
+from .alphabot import ALPHABOT_CFG, ALPHABOT_USD_PATH, ALPHABOT_JOINTS_NAMES, \
     ACTUATORS_LEFT_WHEEL, \
     ACTUATORS_RIGHT_WHEEL
 
