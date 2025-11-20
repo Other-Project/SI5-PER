@@ -39,8 +39,11 @@ teleop_bot_joy:
 	. /opt/ros/*/setup.sh && \
 		ros2 launch teleop_twist_joy teleop-launch.py \
 			config_filepath:="$(CURDIR)/utils/xone.config.yaml" joy_vel:='alphabot2/input_cmd_vel'
+
 isaac:
-	python ./utils/run_helper.py
+	uv sync --directory src/IsaacLab
+	. src/IsaacLab/.venv/bin/activate && \
+		python ./utils/run_helper.py
 
 clean:
 	rm -R .out/
