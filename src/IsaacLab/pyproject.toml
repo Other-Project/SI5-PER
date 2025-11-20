@@ -5,6 +5,7 @@ description = "Model training using NVIDIA Isaac Sim"
 requires-python = "~=3.11.0"
 dependencies = [
     "isaacsim[all,extscache]==5.1.0",
+    "questionary>=2.1.1",
     "torch==2.7.0",
     "torchvision==0.22.0",
 ]

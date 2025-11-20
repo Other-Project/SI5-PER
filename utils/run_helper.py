@@ -14,7 +14,7 @@ def main():
 
     folder = questionary.select(
         "Select RL library:",
-        choices=["rsl_rl", "rl_games", "skrl"],
+        choices=["rsl_rl"],
         default="rsl_rl"
     ).ask()
 
@@ -25,13 +25,13 @@ def main():
 
     headless = questionary.confirm("Headless?", default=True).ask()
 
-    cmd = [sys.executable, f"./src/IsaacLab/scripts/{folder}/{mode}.py", f"--task={task}"]
+    cmd = [sys.executable, f"{get_root_path()}/src/IsaacLab/scripts/{folder}/{mode}.py", f"--task={task}"]
 
     if headless:
         cmd.append("--headless")
 
     if mode == "play":
-        logs_dir = Path(f"./logs/{folder}/quadcopter_direct")
+        logs_dir = Path(f"{get_root_path()}/src/IsaacLab/logs/{folder}/quadcopter_direct")
 
         date_folders = sorted(
             [f for f in logs_dir.glob("*/") if f.is_dir()],
@@ -68,10 +68,15 @@ def main():
         if extras:
             cmd += extras.split()
     elif mode == "train":
+        cmd.append(f"--logs_dir={get_root_path()}/src/IsaacLab/logs/")
         cmd.append("--export_onnx")
 
     print(" ".join(cmd))
     subprocess.run(cmd)
+
+
+def get_root_path():
+    return os.path.join(os.path.dirname(os.path.realpath(sys.argv[0])), "..")
 
 
 if __name__ == "__main__":
