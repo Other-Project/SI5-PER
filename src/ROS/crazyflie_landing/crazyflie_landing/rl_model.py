@@ -47,7 +47,7 @@ class RLModelNode(Node):
 
         # Timer for control loop (to ensure fixed frequency)
         self.timer = self.create_timer(self.dt, self.control_loop, autostart=False)
-        self.tmp = self.create_timer(40.0, self.wait)
+        self.tmp = self.create_timer(0.1, self.wait)  # TODO: Remove this
 
     def wait(self):
         self.timer.reset()
@@ -79,6 +79,19 @@ class RLModelNode(Node):
 
         return np.array(root_lin_vel_b + root_ang_vel_b + projected_gravity_b + desired_pos_b)
 
+    def post_treatment(self, outputs):
+        """Convert raw model outputs to physical commands"""
+        thrust_to_weight = 1.9
+        moment_scale = 0.01
+        _robot_mass = np.array([0.029], dtype=np.float32)
+        _gravity_magnitude = np.array([9.81], dtype=np.float32)
+        _robot_weight = (_robot_mass * _gravity_magnitude).item()
+
+        _actions = outputs.clip(-1.0, 1.0)
+        _thrust = thrust_to_weight * _robot_weight * (_actions[0] + 1.0) / 2.0
+        _moment = moment_scale * _actions[1:]
+        return _thrust, _moment[0], _moment[1], _moment[2]
+
     def control_loop(self):
         """Main loop: Observation -> Inference -> Action"""
 
@@ -86,24 +99,28 @@ class RLModelNode(Node):
         if obs is None:
             return  # No sensor data yet
 
-        self.get_logger().debug(f"Observation: {obs}")
+        self.get_logger().info(f"Observation: {obs}")
 
         # Format for ONNX (Batch Size of 1)
         # Shape: [1, number_of_observations]
         input_tensor = obs.reshape(1, -1).astype(np.float32)
+        self.get_logger().info(f"Input: {input_tensor}")
 
         # Inference (Model execution)
         outputs = self.ort_session.run([self.output_name], {self.input_name: input_tensor})[0][0]
-        thrust, moment_x, moment_y, moment_z = outputs.astype(float).tolist()
+        self.get_logger().info(f"Outputs: {outputs}")
+
+        thrust, moment_x, moment_y, moment_z = self.post_treatment(outputs)
+        self.get_logger().info(f"Action - Thrust: {thrust}, Moments: [{moment_x}, {moment_y}, {moment_z}]")
 
         # Publish action
         msg = Twist()
         msg.linear.x = 0.0
         msg.linear.y = 0.0
-        msg.linear.z = thrust
-        msg.angular.x = moment_x
-        msg.angular.y = moment_y
-        msg.angular.z = moment_z
+        msg.linear.z = float(thrust)
+        msg.angular.x = float(moment_x)
+        msg.angular.y = float(moment_y)
+        msg.angular.z = float(moment_z)
         self.publisher_.publish(msg)
 
 
