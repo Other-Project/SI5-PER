@@ -1,73 +1,113 @@
 import os
 
 from ament_index_python.packages import get_package_share_directory
-
 from launch import LaunchDescription
-from launch.actions import IncludeLaunchDescription
+from launch.actions import AppendEnvironmentVariable, GroupAction, IncludeLaunchDescription
 from launch.launch_description_sources import PythonLaunchDescriptionSource
-from launch.conditions import IfCondition
-from launch.substitutions import LaunchConfiguration, PathJoinSubstitution
-
-from launch_ros.actions import Node
-import xacro
+from launch.substitutions import LaunchConfiguration
+from launch_ros.actions import Node, SetRemap
 
 
 def generate_launch_description():
     """Configure ROS nodes for launch"""
+    ld = LaunchDescription()
+    use_sim_time = LaunchConfiguration("use_sim_time", default="true")
 
-    # Setup to launch a crazyflie gazebo simulation from the ros_gz_crazyflie project
-    pkg_project_crazyflie_gazebo = get_package_share_directory('crazyflie_description')
-    launch_file = PythonLaunchDescriptionSource(os.path.join(pkg_project_crazyflie_gazebo, 'launch', 'spawn_crazyflie_gz.launch.py'))
-    crazyflie_simulation = IncludeLaunchDescription(launch_file)
+    # Start Gazebo Harmonic (empty world)
+    ld.add_action(
+        IncludeLaunchDescription(
+            PythonLaunchDescriptionSource(os.path.join(get_package_share_directory("ros_gz_sim"), "launch", "gz_sim.launch.py")),
+            launch_arguments={"gz_args": "-r empty.sdf"}.items(),
+        )
+    )
+    ld.add_action(AppendEnvironmentVariable("GZ_SIM_RESOURCE_PATH", os.path.join(get_package_share_directory("ab2_gazebo"), "models")))
 
-    # Spawn robot in Gazebo
-    pkg_share = get_package_share_directory("alphabot2_description")
-    xacro_file = os.path.join(pkg_share, "urdf", "alphabot2.urdf")
-    robot_description_config = xacro.process_file(xacro_file).toxml()  # Process xacro → urdf
-    spawn_robot = spawn_in_gazebo(
-        "alphabot2", robot_description_config, (0.0, 2.0, 0.0)
+    ld.add_action(include_launch_file("crazyflie_description", "spawn_crazyflie_gz.launch.py", "crazyflie"))  # Spawn crazyflie in Gazebo
+    ld.add_action(include_launch_file("ab2_gazebo", "spawn_ab2.launch.py", "alphabot2"))  # Spawn alphabot2 in Gazebo
+
+    # ld.add_action(Node(
+    #     package="alphabot2_position",
+    #     executable="position",
+    #     name="position",
+    #     output="screen",
+    #     parameters=[{"robot_prefix": "alphabot2"}],
+    # ))
+
+    # ld.add_action(Node(
+    #     package="crazyflie_position",
+    #     executable="position",
+    #     name="position",
+    #     output="screen",
+    #     parameters=[{"robot_prefix": "crazyflie"}],
+    # ))
+
+    ld.add_action(
+        Node(
+            package="crazyflie_landing",
+            executable="rl_model",
+            name="rl_model",
+            output="screen",
+            parameters=[
+                {
+                    "onnx_path": os.path.join(
+                        get_package_share_directory("crazyflie_launch"),
+                        "config/crazyflie_policy.onnx",
+                    )
+                },
+            ],
+        )
     )
 
-    position = Node(
-        package="crazyflie_position",
-        executable="position",
-        name="position",
-        output="screen",
-        parameters=[{"robot_prefix": "crazyflie"}],
+    # ld.add_action(Node(
+    #     package="crazyflie_control",
+    #     executable="control_services",
+    #     output="screen",
+    #     parameters=[
+    #         {"hover_height": 0.5},
+    #         {"robot_prefix": "/crazyflie"},
+    #         {"incoming_twist_topic": "/crazyflie/input_cmd_vel"},
+    #         {"max_ang_z_rate": 0.4},
+    #     ],
+    # ))
+
+    ld.add_action(
+        IncludeLaunchDescription(
+            PythonLaunchDescriptionSource(
+                os.path.join(get_package_share_directory("ab2_gazebo"), "launch", "robot_state_publisher.launch.py")
+            ),
+            launch_arguments={"use_sim_time": use_sim_time, "frame_prefix": "alphabot2"}.items(),
+        )
     )
 
-    control = Node(
-        package="crazyflie_control",
-        executable="control_services",
-        output="screen",
-        parameters=[
-            {"hover_height": 0.5},
-            {"robot_prefix": "/crazyflie"},
-            {"incoming_twist_topic": "/cmd_vel"},
-            {"max_ang_z_rate": 0.4},
-        ],
+    ld.add_action(
+        Node(
+            package="rviz2",
+            executable="rviz2",
+            name="rviz2",
+            output="screen",
+            parameters=[{"use_sim_time": use_sim_time}],
+            arguments=["-d", os.path.join(get_package_share_directory("ab2_gazebo"), "rviz", "ab2_gazebo.rviz")],
+        )
     )
 
-    return LaunchDescription([crazyflie_simulation, spawn_robot, position, control])
+    return ld
 
 
-def spawn_in_gazebo(
-    name: str, robot_description_config: str, pos: tuple[float, float, float]
-) -> Node:
-    return Node(
-        package="ros_gz_sim",
-        executable="create",
-        arguments=[
-            "-name",
-            name,
-            "-string",
-            robot_description_config,
-            "-x",
-            str(pos[0]),  # X position
-            "-y",
-            str(pos[1]),  # Y position
-            "-z",
-            str(pos[2]),  # Z position (height)
-        ],
-        output="screen",
+def include_launch_file(package: str, launch_file_name: str, namespace: str) -> GroupAction:
+    return GroupAction(
+        actions=[
+            SetRemap(src="/cmd_vel", dst=f"/{namespace}/input_cmd_vel"),
+            SetRemap(src="/tf", dst=f"/{namespace}/tf"),
+            SetRemap(src="/odom", dst=f"/{namespace}/odom"),
+            SetRemap(src="/joint_states", dst=f"/{namespace}/joint_states"),
+            IncludeLaunchDescription(
+                PythonLaunchDescriptionSource(
+                    os.path.join(
+                        get_package_share_directory(package),
+                        "launch",
+                        launch_file_name,
+                    )
+                )
+            ),
+        ]
     )

@@ -1,0 +1,44 @@
+# Xbox One mapping :
+#
+# Axes :
+# 0 : Left stick horizontal
+# 1 : Left stick vertical
+# 2 : LT
+# 3 : Right stick horizontal
+# 4 : Right stick vertical
+# 5 : RT
+# 6 : D-pad horizontal
+# 7 : D-pad vertical
+
+# Btns :
+#  0 : A
+#  1 : B
+#  2 : X
+#  3 : Y
+#  4 : LB
+#  5 : RB
+#  6 : View (left from guide)
+#  7 : Menu (right from guide)
+#  8 : Guide (center Xbox logo)
+#  9 : Left stick press
+# 10 : Right stick press
+
+
+
+# See : https://docs.ros.org/en/jazzy/p/teleop_twist_joy/#parameters
+teleop_twist_joy_node:
+  ros__parameters:
+    axis_linear:
+      x: 1
+    scale_linear:
+      x: 0.7
+    scale_linear_turbo:
+      x: 1.5
+
+    axis_angular:
+      yaw: 0
+    scale_angular:
+      yaw: 0.4
+
+    require_enable_button: false
+    enable_turbo_button: 0

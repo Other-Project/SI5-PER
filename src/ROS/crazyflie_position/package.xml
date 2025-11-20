@@ -3,7 +3,7 @@
 <package format="3">
   <name>crazyflie_position</name>
   <version>0.0.0</version>
-  <description>TODO: Package description</description>
+  <description>Position reporting node for Crazyflie</description>
   <maintainer email="evan.galli@etu.univ-cotedazur.fr">Evan Galli</maintainer>
   <license>MIT</license>
 

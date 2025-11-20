@@ -14,12 +14,10 @@ It allows you to develop in an isolated environment, outside of the core Isaac L
 
 ## Installation
 
-- Install Isaac Lab by following
-  the [installation guide](https://isaac-sim.github.io/IsaacLab/main/source/setup/installation/index.html).
+- Install Isaac Lab by following the [installation guide](https://isaac-sim.github.io/IsaacLab/main/source/setup/installation/index.html).
   We recommend using the conda or uv installation as it simplifies calling Python scripts from the terminal.
 
-- Clone or copy this project/repository separately from the Isaac Lab installation (i.e. outside the `IsaacLab`
-  directory):
+- Clone or copy this project/repository separately from the Isaac Lab installation (i.e. outside the `IsaacLab` directory):
 
 - Using a python interpreter that has Isaac Lab installed, install the library in editable mode using:
 
@@ -31,8 +29,8 @@ It allows you to develop in an isolated environment, outside of the core Isaac L
 
     - Listing the available tasks:
 
-      Note: It the task name changes, it may be necessary to update the search pattern `"Template-"`
-      (in the `scripts/list_envs.py` file) so that it can be listed.
+        Note: It the task name changes, it may be necessary to update the search pattern `"Template-"`
+        (in the `scripts/list_envs.py` file) so that it can be listed.
 
         ```bash
         # use 'FULL_PATH_TO_isaaclab.sh|bat -p' instead of 'python' if Isaac Lab is not installed in Python venv or conda
@@ -48,8 +46,7 @@ It allows you to develop in an isolated environment, outside of the core Isaac L
 
     - Running a task with dummy agents:
 
-      These include dummy agents that output zero or random agents. They are useful to ensure that the environments are
-      configured correctly.
+        These include dummy agents that output zero or random agents. They are useful to ensure that the environments are configured correctly.
 
         - Zero-action agent
 
@@ -68,8 +65,7 @@ It allows you to develop in an isolated environment, outside of the core Isaac L
 
 To setup the IDE, please follow these instructions:
 
-- Run VSCode Tasks, by pressing `Ctrl+Shift+P`, selecting `Tasks: Run Task` and running the `setup_python_env` in the
-  drop down menu.
+- Run VSCode Tasks, by pressing `Ctrl+Shift+P`, selecting `Tasks: Run Task` and running the `setup_python_env` in the drop down menu.
   When running this task, you will be prompted to add the absolute path to your Isaac Sim installation.
 
 If everything executes correctly, it should create a file .python.env in the `.vscode` directory.
@@ -78,8 +74,7 @@ This helps in indexing all the python modules for intelligent suggestions while 
 
 ### Setup as Omniverse Extension (Optional)
 
-We provide an example UI extension that will load upon enabling your extension defined in
-`source/Crazyflie/Crazyflie/ui_extension_example.py`.
+We provide an example UI extension that will load upon enabling your extension defined in `source/Crazyflie/Crazyflie/ui_extension_example.py`.
 
 To enable your extension, follow these steps:
 
@@ -87,8 +82,7 @@ To enable your extension, follow these steps:
     - Navigate to the extension manager using `Window` -> `Extensions`.
     - Click on the **Hamburger Icon**, then go to `Settings`.
     - In the `Extension Search Paths`, enter the absolute path to the `source` directory of this project/repository.
-    - If not already present, in the `Extension Search Paths`, enter the path that leads to Isaac Lab's extension
-      directory directory (`IsaacLab/source`)
+    - If not already present, in the `Extension Search Paths`, enter the path that leads to Isaac Lab's extension directory directory (`IsaacLab/source`)
     - Click on the **Hamburger Icon**, then click `Refresh`.
 
 2. **Search and enable your extension**:
