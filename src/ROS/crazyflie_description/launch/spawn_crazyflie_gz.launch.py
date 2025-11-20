@@ -59,9 +59,24 @@ def generate_launch_description():
         output="screen",
     )
 
+    # Static transform to fix frame_id mismatch
+    # Gazebo publishes as 'crazyflie/base_footprint/lidar_sensor' but actual frame is 'crazyflie/lidar_sensor'
+    static_transform = Node(
+        package="tf2_ros",
+        executable="static_transform_publisher",
+        arguments=[
+            "0", "0", "0",  # x, y, z translation
+            "0", "0", "0",  # roll, pitch, yaw rotation
+            "crazyflie/lidar_sensor",      # parent frame
+            "crazyflie/base_footprint/lidar_sensor",  # child frame (the one Gazebo publishes)
+        ],
+        output="screen",
+    )
+
     return LaunchDescription([
         robot_name_arg,
         robot_state_publisher,
         spawn_robot,
         bridge,
+        static_transform,
     ])

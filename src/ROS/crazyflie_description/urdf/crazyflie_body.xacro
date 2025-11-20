@@ -124,6 +124,15 @@
     <origin xyz="0 0 0.04" rpy="0 0 0"/>
   </joint>
 
+  <!-- Lidar sensor link (child of laser_link for proper frame hierarchy) -->
+  <link name="lidar_sensor"/>
+
+  <joint name="laser_to_lidar_sensor" type="fixed">
+    <parent link="laser_link"/>
+    <child link="lidar_sensor"/>
+    <origin xyz="0 0 0" rpy="0 0 0"/>
+  </joint>
+
   <!-- Joints between body and props -->
   <joint name="body_to_m1_prop" type="continuous">
     <parent link="base_link"/>
@@ -266,14 +275,13 @@
     </plugin>
   </gazebo>
 
-  <!-- LiDAR sensor attached to laser_link -->
-  <gazebo reference="laser_link">
+  <!-- LiDAR sensor attached to lidar_sensor link -->
+  <gazebo reference="lidar_sensor">
     <sensor name="lidar_sensor" type="gpu_lidar">
       <topic>/lidar</topic>
       <update_rate>10</update_rate>
       <always_on>true</always_on>
       <visualize>true</visualize>
-      <frame_id>laser_link</frame_id>
       <lidar>
         <scan>
           <horizontal>
@@ -282,6 +290,12 @@
             <min_angle>-3.14159</min_angle>
             <max_angle>3.14159</max_angle>
           </horizontal>
+          <vertical>
+            <samples>1</samples>
+            <resolution>1</resolution>
+            <min_angle>0</min_angle>
+            <max_angle>0</max_angle>
+          </vertical>
         </scan>
         <range>
           <min>0.08</min>
