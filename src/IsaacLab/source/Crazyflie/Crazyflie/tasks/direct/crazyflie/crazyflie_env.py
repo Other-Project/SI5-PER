@@ -18,6 +18,7 @@ from isaaclab.sim import SimulationCfg
 from isaaclab.terrains import TerrainImporterCfg
 from isaaclab.utils import configclass
 from isaaclab.utils.math import subtract_frame_transforms
+from isaaclab_assets import ANYDRIVE_3_SIMPLE_ACTUATOR_CFG  # isort: skip
 ##
 # Pre-defined configs
 ##
@@ -169,7 +170,9 @@ class CrazyflieEnv(DirectRLEnv):
 
     def _setup_scene(self):
         self._robot = Articulation(self.cfg.robot)
+        self._platform = Articulation(self.cfg.platform)
         self.scene.articulations["robot"] = self._robot
+        self.scene.articulations["platform"] = self._platform
 
         self.cfg.terrain.num_envs = self.scene.cfg.num_envs
         self.cfg.terrain.env_spacing = self.scene.cfg.env_spacing
@@ -184,8 +187,6 @@ class CrazyflieEnv(DirectRLEnv):
         light_cfg.func("/World/Light", light_cfg)
 
     def _pre_physics_step(self, actions: torch.Tensor):
-        self._update_moving_goal()
-
         self._actions = actions.clone().clamp(-1.0, 1.0)
         self._thrust[:, 0, 2] = self.cfg.thrust_to_weight * self._robot_weight * (self._actions[:, 0] + 1.0) / 2.0
         self._moment[:, 0, :] = self.cfg.moment_scale * self._actions[:, 1:]
@@ -297,32 +298,17 @@ class CrazyflieEnv(DirectRLEnv):
 
         self._actions[env_ids] = 0.0
         # Sample new commands
-        self._desired_pos_w[env_ids, :2] = (
-                torch.zeros(len(env_ids), 2, device=self.device).uniform_(-1.0, 1.0)
-                + self._terrain.env_origins[env_ids, :2]
-        )
-        self._desired_pos_w[env_ids, 2] = torch.ones(len(env_ids), device=self.device) * 1.0
-
-        rand_xy_offset = torch.zeros(len(env_ids), 2, device=self.device).uniform_(-2.5, 2.5)
-        rand_z = torch.zeros(len(env_ids), 1, device=self.device).uniform_(2.5, 3.5)
-
-        start_pos = torch.cat([self._desired_pos_w[env_ids, :2] + rand_xy_offset, rand_z], dim=1)
-
-        default_root_state = self._robot.data.default_root_state[env_ids]
-        default_root_state[:, :3] = start_pos
-
+        self._desired_pos_w[env_ids, :] = self._platform.data.root_pos_w[env_ids, :]
         # Reset robot state
         joint_pos = self._robot.data.default_joint_pos[env_ids]
         joint_vel = self._robot.data.default_joint_vel[env_ids]
         default_root_state = self._robot.data.default_root_state[env_ids]
+        default_root_state[:, 2] = (torch.rand(len(env_ids), device=self.device) * (
+                self.cfg.drone_max_height - self.cfg.drone_min_height) + self.cfg.drone_min_height)
         default_root_state[:, :3] += self._terrain.env_origins[env_ids]
         self._robot.write_root_pose_to_sim(default_root_state[:, :7], env_ids)
         self._robot.write_root_velocity_to_sim(default_root_state[:, 7:], env_ids)
         self._robot.write_joint_state_to_sim(joint_pos, joint_vel, None, env_ids)
-
-    def _update_moving_goal(self):
-        speed = 0.05
-        self._desired_pos_w[:, 0] += speed * self.step_dt
 
     def _set_debug_vis_impl(self, debug_vis: bool):
         # create markers if necessary for the first time
