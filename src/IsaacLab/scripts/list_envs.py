@@ -21,6 +21,7 @@ from isaaclab.app import AppLauncher
 app_launcher = AppLauncher(headless=True)
 simulation_app = app_launcher.app
 
+
 """Rest everything follows."""
 
 import gymnasium as gym
