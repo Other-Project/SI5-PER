@@ -14,15 +14,26 @@ def generate_launch_description():
     use_sim_time = LaunchConfiguration("use_sim_time", default="true")
 
     # Start Gazebo Harmonic (empty world)
+    # ld.add_action(
+    #     IncludeLaunchDescription(
+    #         PythonLaunchDescriptionSource(os.path.join(get_package_share_directory("ros_gz_sim"), "launch", "gz_sim.launch.py")),
+    #         launch_arguments={"gz_args": "-r empty.sdf"}.items(),
+    #     )
+    # )
+    # ld.add_action(AppendEnvironmentVariable("GZ_SIM_RESOURCE_PATH", os.path.join(get_package_share_directory("ab2_gazebo"), "models")))
+
+    # Start Gazebo Harmonic with room world
+    room_world = os.path.join(get_package_share_directory("crazyflie_description"), "worlds", "room.sdf")
+
     ld.add_action(
         IncludeLaunchDescription(
             PythonLaunchDescriptionSource(os.path.join(get_package_share_directory("ros_gz_sim"), "launch", "gz_sim.launch.py")),
-            launch_arguments={"gz_args": "-r empty.sdf"}.items(),
+            launch_arguments={"gz_args": f"-v 4 -r {room_world}"}.items(),
         )
     )
     ld.add_action(AppendEnvironmentVariable("GZ_SIM_RESOURCE_PATH", os.path.join(get_package_share_directory("ab2_gazebo"), "models")))
 
-    ld.add_action(include_launch_file("crazyflie_description", "spawn_crazyflie_gz.launch.py", "crazyflie"))  # Spawn crazyflie in Gazebo
+    ld.add_action(include_launch_file_no_tf_remap("crazyflie_description", "spawn_crazyflie_gz.launch.py"))  # Spawn crazyflie in Gazebo
     ld.add_action(include_launch_file("ab2_gazebo", "spawn_ab2.launch.py", "alphabot2"))  # Spawn alphabot2 in Gazebo
 
     # ld.add_action(Node(
@@ -41,36 +52,36 @@ def generate_launch_description():
     #     parameters=[{"robot_prefix": "crazyflie"}],
     # ))
 
-    ld.add_action(
-        Node(
-            package="crazyflie_landing",
-            executable="rl_model",
-            name="rl_model",
-            output="screen",
-            parameters=[
-                {
-                    "onnx_path": os.path.join(
-                        get_package_share_directory("crazyflie_launch"),
-                        "config/crazyflie_policy.onnx",
-                    )
-                },
-            ],
-        )
-    )
-
     # ld.add_action(
     #     Node(
-    #         package="crazyflie_control",
-    #         executable="control_services",
+    #         package="crazyflie_landing",
+    #         executable="rl_model",
+    #         name="rl_model",
     #         output="screen",
     #         parameters=[
-    #             {"hover_height": 0.5},
-    #             {"robot_prefix": "/crazyflie"},
-    #             {"incoming_twist_topic": "/crazyflie/input_cmd_vel"},
-    #             {"max_ang_z_rate": 0.4},
+    #             {
+    #                 "onnx_path": os.path.join(
+    #                     get_package_share_directory("crazyflie_launch"),
+    #                     "config/crazyflie_policy.onnx",
+    #                 )
+    #             },
     #         ],
     #     )
     # )
+
+    ld.add_action(
+        Node(
+            package="crazyflie_control",
+            executable="control_services",
+            output="screen",
+            parameters=[
+                {"hover_height": 0.5},
+                {"robot_prefix": "/crazyflie"},
+                {"incoming_twist_topic": "/crazyflie/input_cmd_vel"},
+                {"max_ang_z_rate": 0.4},
+            ],
+        )
+    )
 
     ld.add_action(
         IncludeLaunchDescription(
@@ -81,18 +92,31 @@ def generate_launch_description():
         )
     )
 
-    # ld.add_action(
-    #     Node(
-    #         package="rviz2",
-    #         executable="rviz2",
-    #         name="rviz2",
-    #         output="screen",
-    #         parameters=[{"use_sim_time": use_sim_time}],
-    #         arguments=["-d", os.path.join(get_package_share_directory("ab2_gazebo"), "rviz", "ab2_gazebo.rviz")],
-    #     )
-    # )
+    ld.add_action(
+        Node(
+            package="rviz2",
+            executable="rviz2",
+            name="rviz2",
+            output="screen",
+            parameters=[{"use_sim_time": use_sim_time}],
+            arguments=["-d", os.path.join(get_package_share_directory("ab2_gazebo"), "rviz", "ab2_gazebo.rviz")],
+        )
+    )
 
     return ld
+
+
+def include_launch_file_no_tf_remap(package: str, launch_file_name: str) -> IncludeLaunchDescription:
+    """Include a launch file without remapping TF (for primary robot)"""
+    return IncludeLaunchDescription(
+        PythonLaunchDescriptionSource(
+            os.path.join(
+                get_package_share_directory(package),
+                "launch",
+                launch_file_name,
+            )
+        )
+    )
 
 
 def include_launch_file(package: str, launch_file_name: str, namespace: str) -> GroupAction:
