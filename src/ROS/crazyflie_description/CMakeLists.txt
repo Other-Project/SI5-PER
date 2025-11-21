@@ -7,6 +7,9 @@ endif()
 
 # find dependencies
 find_package(ament_cmake REQUIRED)
+find_package(ament_cmake_python REQUIRED)
+find_package(rclpy REQUIRED)
+find_package(sensor_msgs REQUIRED)
 
 
 if(BUILD_TESTING)
@@ -23,7 +26,15 @@ install(DIRECTORY
   meshes
   rviz
   config
+  worlds
   DESTINATION share/${PROJECT_NAME}/
+)
+
+# Install Python executables
+install(PROGRAMS
+  launch/laser_frame_fixer.py
+  DESTINATION lib/${PROJECT_NAME}
+  RENAME laser_frame_fixer
 )
 
 ament_package()
