@@ -2,7 +2,7 @@
 - ros_topic_name: "/crazyflie/cmd_vel"
   gz_topic_name: "/crazyflie/gazebo/command/twist"
   ros_type_name: "geometry_msgs/msg/Twist"
-  gz_type_name: "ignition.msgs.Twist"
+  gz_type_name: "gz.msgs.Twist"
   direction: ROS_TO_GZ
 - ros_topic_name: "/crazyflie/odom"
   gz_topic_name: "/model/crazyflie/odometry"
@@ -14,8 +14,8 @@
   ros_type_name: "tf2_msgs/msg/TFMessage"
   gz_type_name: "gz.msgs.Pose_V"
   direction: GZ_TO_ROS
-- ros_topic_name: "/crazyflie/scan"
+- ros_topic_name: "/crazyflie/scan_raw"
   gz_topic_name: "/lidar"
   ros_type_name: "sensor_msgs/msg/LaserScan"
-  gz_type_name: "ignition.msgs.LaserScan"
+  gz_type_name: "gz.msgs.LaserScan"
   direction: GZ_TO_ROS
