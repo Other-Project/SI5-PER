@@ -104,23 +104,25 @@ class RLModelNode(Node):
         # Format for ONNX (Batch Size of 1)
         # Shape: [1, number_of_observations]
         input_tensor = obs.reshape(1, -1).astype(np.float32)
-        self.get_logger().info(f"Input: {input_tensor}")
+        self.get_logger().debug(f"Input: {input_tensor}")
 
         # Inference (Model execution)
         outputs = self.ort_session.run([self.output_name], {self.input_name: input_tensor})[0][0]
-        self.get_logger().info(f"Outputs: {outputs}")
+        self.get_logger().debug(f"Outputs: {outputs}")
 
         thrust, moment_x, moment_y, moment_z = self.post_treatment(outputs)
-        self.get_logger().info(f"Action - Thrust: {thrust}, Moments: [{moment_x}, {moment_y}, {moment_z}]")
+        self.get_logger().debug(f"Action - Thrust: {thrust}, Moments: [{moment_x}, {moment_y}, {moment_z}]")
+
+        velocity_x, velocity_y, velocity_z, angular_velocity_z = 0.0, 0.0, 0.0, 0.0 # TODO: Modify the model to output velocities
 
         # Publish action
         msg = Twist()
-        msg.linear.x = 0.0
-        msg.linear.y = 0.0
-        msg.linear.z = float(thrust)
-        msg.angular.x = float(moment_x)
-        msg.angular.y = float(moment_y)
-        msg.angular.z = float(moment_z)
+        msg.linear.x = velocity_x
+        msg.linear.y = velocity_y
+        msg.linear.z = velocity_z
+        msg.angular.x = 0.0  # ignored
+        msg.angular.y = 0.0  # ignored
+        msg.angular.z = angular_velocity_z
         self.publisher_.publish(msg)
 
 
