@@ -43,7 +43,7 @@ def generate_launch_description():
             "-string",
             robot_description_config,
             "-x",
-            "0.0",  # X position
+            "-1.0",  # X position
             "-y",
             "0.0",  # Y position
             "-z",

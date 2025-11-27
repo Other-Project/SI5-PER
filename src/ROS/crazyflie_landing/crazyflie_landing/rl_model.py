@@ -5,8 +5,6 @@ from geometry_msgs.msg import Twist
 from nav_msgs.msg import Odometry
 from rclpy.node import Node
 
-from .utils import angular_vel, gravity_in_body
-
 
 class RLModelNode(Node):
     def __init__(self):
@@ -69,28 +67,19 @@ class RLModelNode(Node):
             self.current_twist.linear.y,
             self.current_twist.linear.z,
         ]
-        root_ang_vel_b = angular_vel(self.current_pose.orientation, self.current_twist.angular)
-        projected_gravity_b = gravity_in_body(self.current_pose.orientation)
+        root_ang_b = [
+            self.current_pose.orientation.w,
+            self.current_pose.orientation.x,
+            self.current_pose.orientation.y,
+            self.current_pose.orientation.z,
+        ]
         desired_pos_b = [
             self.target_pose.position.x - self.current_pose.position.x,
             self.target_pose.position.y - self.current_pose.position.y,
-            self.target_pose.position.z - self.current_pose.position.z,
+            self.target_pose.position.z + 0.1 - self.current_pose.position.z,
         ]
 
-        return np.array(root_lin_vel_b + root_ang_vel_b + projected_gravity_b + desired_pos_b)
-
-    def post_treatment(self, outputs):
-        """Convert raw model outputs to physical commands"""
-        thrust_to_weight = 1.9
-        moment_scale = 0.01
-        _robot_mass = np.array([0.029], dtype=np.float32)
-        _gravity_magnitude = np.array([9.81], dtype=np.float32)
-        _robot_weight = (_robot_mass * _gravity_magnitude).item()
-
-        _actions = outputs.clip(-1.0, 1.0)
-        _thrust = thrust_to_weight * _robot_weight * (_actions[0] + 1.0) / 2.0
-        _moment = moment_scale * _actions[1:]
-        return _thrust, _moment[0], _moment[1], _moment[2]
+        return np.array(root_lin_vel_b + root_ang_b + desired_pos_b)
 
     def control_loop(self):
         """Main loop: Observation -> Inference -> Action"""
@@ -104,25 +93,25 @@ class RLModelNode(Node):
         # Format for ONNX (Batch Size of 1)
         # Shape: [1, number_of_observations]
         input_tensor = obs.reshape(1, -1).astype(np.float32)
-        self.get_logger().debug(f"Input: {input_tensor}")
+        self.get_logger().info(f"Input: {np.array_str(input_tensor, precision=3, suppress_small=True)}")
 
         # Inference (Model execution)
         outputs = self.ort_session.run([self.output_name], {self.input_name: input_tensor})[0][0]
-        self.get_logger().debug(f"Outputs: {outputs}")
+        self.get_logger().info(f"Outputs: {np.array_str(outputs, precision=3, suppress_small=True)}")
 
-        velocity_x, velocity_y, velocity_z, angular_velocity_z = (outputs / 10).clip(-1.0, 1.0)
+        velocity_x, velocity_y, velocity_z, angular_velocity_z = outputs.clip(-1.0, 1.0)
         self.get_logger().debug(
             f"Commanded velocities - Linear: [{velocity_x}, {velocity_y}, {velocity_z}], Angular Z: {angular_velocity_z}"
         )
 
         # Publish action
         msg = Twist()
-        msg.linear.x = float(velocity_x)
-        msg.linear.y = float(velocity_y)
-        msg.linear.z = float(velocity_z)
+        msg.linear.x = float(velocity_x * 0.5)
+        msg.linear.y = float(velocity_y * 0.5)
+        msg.linear.z = float(velocity_z * 0.5)
         msg.angular.x = 0.0  # ignored
         msg.angular.y = 0.0  # ignored
-        msg.angular.z = float(angular_velocity_z)
+        msg.angular.z = float(angular_velocity_z * 0.4)
         self.publisher_.publish(msg)
 
 
