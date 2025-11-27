@@ -99,7 +99,7 @@ class RLModelNode(Node):
         if obs is None:
             return  # No sensor data yet
 
-        self.get_logger().info(f"Observation: {obs}")
+        self.get_logger().debug(f"Observation: {obs}")
 
         # Format for ONNX (Batch Size of 1)
         # Shape: [1, number_of_observations]
@@ -110,19 +110,19 @@ class RLModelNode(Node):
         outputs = self.ort_session.run([self.output_name], {self.input_name: input_tensor})[0][0]
         self.get_logger().debug(f"Outputs: {outputs}")
 
-        thrust, moment_x, moment_y, moment_z = self.post_treatment(outputs)
-        self.get_logger().debug(f"Action - Thrust: {thrust}, Moments: [{moment_x}, {moment_y}, {moment_z}]")
-
-        velocity_x, velocity_y, velocity_z, angular_velocity_z = 0.0, 0.0, 0.0, 0.0 # TODO: Modify the model to output velocities
+        velocity_x, velocity_y, velocity_z, angular_velocity_z = (outputs / 10).clip(-1.0, 1.0)
+        self.get_logger().debug(
+            f"Commanded velocities - Linear: [{velocity_x}, {velocity_y}, {velocity_z}], Angular Z: {angular_velocity_z}"
+        )
 
         # Publish action
         msg = Twist()
-        msg.linear.x = velocity_x
-        msg.linear.y = velocity_y
-        msg.linear.z = velocity_z
+        msg.linear.x = float(velocity_x)
+        msg.linear.y = float(velocity_y)
+        msg.linear.z = float(velocity_z)
         msg.angular.x = 0.0  # ignored
         msg.angular.y = 0.0  # ignored
-        msg.angular.z = angular_velocity_z
+        msg.angular.z = float(angular_velocity_z)
         self.publisher_.publish(msg)
 
 
