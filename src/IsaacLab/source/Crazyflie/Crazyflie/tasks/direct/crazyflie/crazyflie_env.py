@@ -53,7 +53,7 @@ class CrazyflieEnvCfg(DirectRLEnvCfg):
     episode_length_s = 10.0
     decimation = 2
     action_space = 4
-    observation_space = 12
+    observation_space = 10
     state_space = 0
     debug_vis = True
 
@@ -92,8 +92,10 @@ class CrazyflieEnvCfg(DirectRLEnvCfg):
 
     # drone
     robot: ArticulationCfg = CRAZYFLIE_CFG.replace(prim_path="/World/envs/env_.*/Robot")
-    thrust_to_weight = 1.9
-    moment_scale = 0.01
+
+    # Velocity command limits
+    max_linear_velocity = 0.5  # m/s
+    max_angular_velocity_z = 0.4  # rad/s
 
     # alpha bot
     platform: ArticulationCfg = ALPHABOT_CFG.replace(
@@ -122,10 +124,10 @@ class CrazyflieEnv(DirectRLEnv):
     def __init__(self, cfg: CrazyflieEnvCfg, render_mode: str | None = None, **kwargs):
         super().__init__(cfg, render_mode, **kwargs)
 
-        # Total thrust and moment applied to the base of the quadcopter
+        # Velocity commands
         self._actions = torch.zeros(self.num_envs, gym.spaces.flatdim(self.single_action_space), device=self.device)
-        self._thrust = torch.zeros(self.num_envs, 1, 3, device=self.device)
-        self._moment = torch.zeros(self.num_envs, 1, 3, device=self.device)
+        self._drone_target_lin_vel = torch.zeros(self.num_envs, 3, device=self.device)
+        self._drone_target_ang_vel = torch.zeros(self.num_envs, 3, device=self.device)
 
         # Platform wheel velocities for differential drive
         self._platform_wheel_vel = None
@@ -188,18 +190,32 @@ class CrazyflieEnv(DirectRLEnv):
 
     def _pre_physics_step(self, actions: torch.Tensor):
         self._actions = actions.clone().clamp(-1.0, 1.0)
-        self._thrust[:, 0, 2] = self.cfg.thrust_to_weight * self._robot_weight * (self._actions[:, 0] + 1.0) / 2.0
-        self._moment[:, 0, :] = self.cfg.moment_scale * self._actions[:, 1:]
+
+        self._drone_target_lin_vel[:, 0] = self._actions[:, 0] * self.cfg.max_linear_velocity
+        self._drone_target_lin_vel[:, 1] = self._actions[:, 1] * self.cfg.max_linear_velocity
+        self._drone_target_lin_vel[:, 2] = self._actions[:, 2] * self.cfg.max_linear_velocity
+
+        self._drone_target_ang_vel[:, 2] = self._actions[:, 3] * self.cfg.max_angular_velocity_z
+
+        self._drone_target_ang_vel[:, 0] = 0.0
+        self._drone_target_ang_vel[:, 1] = 0.0
 
     def _apply_action(self):
-        self._robot.set_external_force_and_torque(self._thrust, self._moment, body_ids=self._body_id)
+        dt = self.sim.cfg.dt * self.cfg.decimation
 
+        self._drone_target_ang_vel[:, 0] = 0.0
+        self._drone_target_ang_vel[:, 1] = 0.0
+
+        self._robot.write_root_velocity_to_sim(
+            torch.cat([self._drone_target_lin_vel, self._drone_target_ang_vel], dim=-1)
+        )
+
+        # Apply platform control
         self._platform.set_joint_velocity_target(
             self._platform_wheel_vel,
             joint_ids=self._platform_joint_indices
         )
         # Change the platform position based on its velocity
-        dt = self.sim.cfg.dt * self.cfg.decimation
         new_platform_pos = self._platform.data.root_pos_w + self._platform_target_lin_vel * dt
         new_platform_quat = self._platform.data.root_quat_w
         self._platform.write_root_pose_to_sim(torch.cat([new_platform_pos, new_platform_quat], dim=-1))
@@ -214,8 +230,7 @@ class CrazyflieEnv(DirectRLEnv):
         obs = torch.cat(
             [
                 self._robot.data.root_lin_vel_b,
-                self._robot.data.root_ang_vel_b,
-                self._robot.data.projected_gravity_b,
+                self._robot.data.root_quat_w,
                 desired_pos_b,
             ],
             dim=-1,
@@ -297,6 +312,9 @@ class CrazyflieEnv(DirectRLEnv):
             self.episode_length_buf = torch.randint_like(self.episode_length_buf, high=int(self.max_episode_length))
 
         self._actions[env_ids] = 0.0
+        self._drone_target_lin_vel[env_ids] = 0.0
+        self._drone_target_ang_vel[env_ids] = 0.0
+
         # Sample new commands
         self._desired_pos_w[env_ids, :] = self._platform.data.root_pos_w[env_ids, :]
         # Reset robot state
