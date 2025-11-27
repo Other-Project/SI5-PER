@@ -26,6 +26,11 @@ class RLModelNode(Node):
         self.get_logger().info(f"Loading model: {self.onnx_path}")
         self.ort_session = ort.InferenceSession(self.onnx_path, providers=["CPUExecutionProvider"])
 
+        self.metadata = self.ort_session.get_modelmeta()
+        self.get_logger().info(
+            f"Model metadata: {self.metadata.custom_metadata_map}"
+        )
+
         # Retrieving model input/output information
         self.input_name = self.ort_session.get_inputs()[0].name
         self.input_shape = self.ort_session.get_inputs()[0].shape

@@ -9,6 +9,8 @@
 
 import argparse
 import sys
+import json
+import onnx
 
 from isaaclab.app import AppLauncher
 
@@ -225,15 +227,43 @@ def main(env_cfg: ManagerBasedRLEnvCfg | DirectRLEnvCfg | DirectMARLEnvCfg, agen
             policy = runner.alg.policy
             obs_normalizer = runner.alg.obs_normalizer if hasattr(runner.alg, 'obs_normalizer') else None
 
+            file_name = "crazyflie_policy.onnx"
+            file_path = os.path.join(log_dir,file_name)
             export_policy_as_onnx(
                 policy=policy,
                 path=log_dir,
                 normalizer=obs_normalizer,
-                filename="crazyflie_policy.onnx",
+                filename=file_name,
                 verbose=True
             )
 
-            print(f"Policy exported successfully to {log_dir}/crazyflie_policy.onnx")
+            print(f"Policy exported successfully to {file_path}")
+
+            metadata = {
+                "timestamp": datetime.now().isoformat(),
+                "task": args_cli.task,
+                "agent": args_cli.agent,
+                "env": env.unwrapped.spec.id,
+                "delta_time": env.unwrapped.dt,
+                "inputs": dict(zip(
+                    env.unwrapped.observation_manager.active_terms['policy'], 
+                    env.unwrapped.observation_manager.group_obs_term_dim['policy'])),
+                "outputs": dict(zip(
+                    env.unwrapped.action_manager.active_terms, 
+                    env.unwrapped.action_manager.action_term_dim))
+            }
+
+            model = onnx.load(file_path)
+            for key, value in metadata.items():
+                metadata_props = model.metadata_props.add()
+                metadata_props.key = key
+                if isinstance(value, dict):
+                    metadata_props.value = json.dumps(value)
+                else:
+                    metadata_props.value = str(value)
+            onnx.save(model, file_path)
+
+            print(f"Metadata successfully added to {file_path}")
 
         except Exception as e:
             print(f"Failed to export policy to ONNX format: {e}")
