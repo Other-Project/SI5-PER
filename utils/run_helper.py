@@ -64,6 +64,10 @@ def main():
 
         cmd.append(f"--checkpoint={checkpoint_path}")
 
+        num_envs = questionary.text("Number of environment:", default="1").ask()
+
+        cmd.append(f"--num_envs={num_envs}")
+
         extras = questionary.text("Extra args:", default="").ask()
         if extras:
             cmd += extras.split()
