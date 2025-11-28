@@ -96,7 +96,6 @@ class CrazyflieEnvCfg(DirectRLEnvCfg):
     # Velocity command limits
     max_linear_velocity = 0.5  # m/s
     max_angular_velocity_z = 0.4  # rad/s
-    factor = 0.2  # evanG constant
 
     # alpha bot
     platform: ArticulationCfg = ALPHABOT_CFG.replace(
@@ -107,6 +106,8 @@ class CrazyflieEnvCfg(DirectRLEnvCfg):
     lin_vel_reward_scale = -0.05
     ang_vel_reward_scale = -0.01
     distance_to_goal_reward_scale = 15.0
+    tilt_constraint_reward_scale = -5.0
+    unsafe_velocity_reward_scale = -0.5
 
     # random pose range
     platform_spawn_range_xy = 3.0
@@ -147,6 +148,8 @@ class CrazyflieEnv(DirectRLEnv):
                 "lin_vel",
                 "ang_vel",
                 "distance_to_goal",
+                "tilt_constraint",
+                "unsafe_velocity",
             ]
         }
         # Get specific body indices
@@ -166,7 +169,6 @@ class CrazyflieEnv(DirectRLEnv):
             len(self._platform_joint_indices),
             device=self.device
         )
-
 
         # add handle for debug visualization (this is set to a valid handle inside set_debug_vis)
         self.set_debug_vis(self.cfg.debug_vis)
@@ -192,20 +194,11 @@ class CrazyflieEnv(DirectRLEnv):
     def _pre_physics_step(self, actions: torch.Tensor):
         self._actions = actions.clone().clamp(-1.0, 1.0)
 
-        vx, vy, vz, wz = self._actions[:, :4].unbind(dim=-1)
-
-        max_val = torch.maximum(abs(vx) * self.cfg.factor, torch.tensor(self.cfg.factor))
-        vx = vx.clamp(-max_val, max_val)
-        vy = vy.clamp(-max_val, max_val)
-        wz = wz.clamp(-max_val, max_val)
-
-        self._drone_target_lin_vel_b[:, 0] = vx * self.cfg.max_linear_velocity
-        self._drone_target_lin_vel_b[:, 1] = vy * self.cfg.max_linear_velocity
-        self._drone_target_lin_vel_b[:, 2] = vz * self.cfg.max_linear_velocity
+        self._drone_target_lin_vel_b[:, :3] = self._actions[:, :3] * self.cfg.max_linear_velocity
 
         self._drone_target_ang_vel_b[:, 0] = 0.0
         self._drone_target_ang_vel_b[:, 1] = 0.0
-        self._drone_target_ang_vel_b[:, 2] = wz * self.cfg.max_angular_velocity_z
+        self._drone_target_ang_vel_b[:, 2] = self._actions[:, 3] * self.cfg.max_angular_velocity_z
 
     def _apply_action(self):
         dt = self.sim.cfg.dt * self.cfg.decimation
@@ -234,7 +227,6 @@ class CrazyflieEnv(DirectRLEnv):
         new_platform_quat = self._platform.data.root_quat_w
         self._platform.write_root_pose_to_sim(torch.cat([new_platform_pos, new_platform_quat], dim=-1))
 
-
     def _get_observations(self) -> dict:
         self._desired_pos_w = self._platform.data.root_pos_w.clone()
         self._desired_pos_w[:, 2] += 0.1
@@ -257,10 +249,18 @@ class CrazyflieEnv(DirectRLEnv):
         ang_vel = torch.sum(torch.square(self._robot.data.root_ang_vel_b), dim=1)
         distance_to_goal = torch.linalg.norm(self._desired_pos_w - self._robot.data.root_pos_w, dim=1)
         distance_to_goal_mapped = 1 - torch.tanh(distance_to_goal / 0.8)
+        grav_b = self._robot.data.projected_gravity_b
+        flatness = grav_b[:, 2].abs()
+        tilt_penalty = torch.square(torch.clamp(1.0 - flatness, min=0.0))
+        v_xy = torch.norm(self._robot.data.root_lin_vel_b[:, :2], dim=1)
+        v_z = self._robot.data.root_lin_vel_b[:, 2]
+        unsafe_ratio = torch.relu(v_xy - torch.abs(v_z))
         rewards = {
             "lin_vel": lin_vel * self.cfg.lin_vel_reward_scale * self.step_dt,
             "ang_vel": ang_vel * self.cfg.ang_vel_reward_scale * self.step_dt,
             "distance_to_goal": distance_to_goal_mapped * self.cfg.distance_to_goal_reward_scale * self.step_dt,
+            "tilt_constraint": tilt_penalty * self.cfg.tilt_constraint_reward_scale * self.step_dt,
+            "unsafe_velocity": unsafe_ratio * self.cfg.unsafe_velocity_reward_scale * self.step_dt,
         }
         reward = torch.sum(torch.stack(list(rewards.values())), dim=0)
         # Logging
@@ -270,7 +270,13 @@ class CrazyflieEnv(DirectRLEnv):
 
     def _get_dones(self) -> tuple[torch.Tensor, torch.Tensor]:
         time_out = self.episode_length_buf >= self.max_episode_length - 1
-        died = torch.logical_or(self._robot.data.root_pos_w[:, 2] <= 0, self._robot.data.root_pos_w[:, 2] > 2.0)
+        died_pos = torch.logical_or(self._robot.data.root_pos_w[:, 2] <= 0, self._robot.data.root_pos_w[:, 2] > 2.0)
+
+        grav_b = self._robot.data.projected_gravity_b
+        died_tilt = grav_b[:, 2].abs() < 0.5
+
+        died = torch.logical_or(died_pos, died_tilt)
+
         return died, time_out
 
     def _reset_idx(self, env_ids: torch.Tensor | None):
