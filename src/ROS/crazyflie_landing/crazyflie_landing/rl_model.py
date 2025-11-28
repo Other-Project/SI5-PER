@@ -100,8 +100,14 @@ class RLModelNode(Node):
         self.get_logger().info(f"Outputs: {np.array_str(outputs, precision=3, suppress_small=True)}")
 
         velocity_x, velocity_y, velocity_z, angular_velocity_z = outputs.clip(-1.0, 1.0)
-        self.get_logger().debug(
-            f"Commanded velocities - Linear: [{velocity_x}, {velocity_y}, {velocity_z}], Angular Z: {angular_velocity_z}"
+        factor = 0.2
+        max_val = max(abs(velocity_z) * factor, factor)
+        velocity_x = np.clip(velocity_x, -max_val, max_val)
+        velocity_y = np.clip(velocity_y, -max_val, max_val)
+        angular_velocity_z = np.clip(angular_velocity_z, -max_val, max_val)
+
+        self.get_logger().info(
+            f"Commanded velocities -> vx: {velocity_x:.3f}, vy: {velocity_y:.3f}, vz: {velocity_z:.3f}, wz: {angular_velocity_z:.3f}"
         )
 
         # Publish action

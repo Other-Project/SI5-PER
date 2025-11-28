@@ -45,9 +45,11 @@ def generate_launch_description():
             "-x",
             "-1.0",  # X position
             "-y",
-            "0.0",  # Y position
+            "1.0",  # Y position
             "-z",
-            "0.5",  # Z position (height)
+            "1.0",  # Z position (height)
+            "-Y",
+            "1",  # Yaw rotation
         ],
         output="screen",
     )
