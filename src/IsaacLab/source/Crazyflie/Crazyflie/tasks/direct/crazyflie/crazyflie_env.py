@@ -50,7 +50,7 @@ class CrazyflieEnvWindow(BaseEnvWindow):
 @configclass
 class CrazyflieEnvCfg(DirectRLEnvCfg):
     # env
-    episode_length_s = 10.0
+    episode_length_s = 15.0
     decimation = 2
     action_space = 4
     observation_space = 10
