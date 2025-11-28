@@ -96,6 +96,7 @@ class CrazyflieEnvCfg(DirectRLEnvCfg):
     # Velocity command limits
     max_linear_velocity = 0.5  # m/s
     max_angular_velocity_z = 0.4  # rad/s
+    factor = 0.2  # evanG constant
 
     # alpha bot
     platform: ArticulationCfg = ALPHABOT_CFG.replace(
@@ -191,13 +192,20 @@ class CrazyflieEnv(DirectRLEnv):
     def _pre_physics_step(self, actions: torch.Tensor):
         self._actions = actions.clone().clamp(-1.0, 1.0)
 
-        self._drone_target_lin_vel_b[:, 0] = self._actions[:, 0] * self.cfg.max_linear_velocity
-        self._drone_target_lin_vel_b[:, 1] = self._actions[:, 1] * self.cfg.max_linear_velocity
-        self._drone_target_lin_vel_b[:, 2] = self._actions[:, 2] * self.cfg.max_linear_velocity
+        vx, vy, vz, wz = self._actions[:, :4].unbind(dim=-1)
 
-        self._drone_target_ang_vel_b[:, 2] = self._actions[:, 3] * self.cfg.max_angular_velocity_z
+        max_val = torch.maximum(abs(vx) * self.cfg.factor, torch.tensor(self.cfg.factor))
+        vx = vx.clamp(-max_val, max_val)
+        vy = vy.clamp(-max_val, max_val)
+        wz = wz.clamp(-max_val, max_val)
+
+        self._drone_target_lin_vel_b[:, 0] = vx * self.cfg.max_linear_velocity
+        self._drone_target_lin_vel_b[:, 1] = vy * self.cfg.max_linear_velocity
+        self._drone_target_lin_vel_b[:, 2] = vz * self.cfg.max_linear_velocity
+
         self._drone_target_ang_vel_b[:, 0] = 0.0
         self._drone_target_ang_vel_b[:, 1] = 0.0
+        self._drone_target_ang_vel_b[:, 2] = wz * self.cfg.max_angular_velocity_z
 
     def _apply_action(self):
         dt = self.sim.cfg.dt * self.cfg.decimation
