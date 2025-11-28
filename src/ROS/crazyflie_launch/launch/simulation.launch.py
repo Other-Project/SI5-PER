@@ -22,8 +22,30 @@ def generate_launch_description():
     )
     ld.add_action(AppendEnvironmentVariable("GZ_SIM_RESOURCE_PATH", os.path.join(get_package_share_directory("ab2_gazebo"), "models")))
 
-    ld.add_action(include_launch_file("crazyflie_description", "spawn_crazyflie_gz.launch.py", "crazyflie"))  # Spawn crazyflie in Gazebo
-    ld.add_action(include_launch_file("ab2_gazebo", "spawn_ab2.launch.py", "alphabot2"))  # Spawn alphabot2 in Gazebo
+    ld.add_action(  # Spawn crazyflie in Gazebo
+        include_launch_file(
+            "crazyflie_description",
+            "spawn_crazyflie_gz.launch.py",
+            "crazyflie",
+            {
+                "x_pose": "0.5",
+                "y_pose": "0.5",
+                "z_pose": "2.0",
+                "z_angle": "0.0",
+            },
+        )
+    )
+    ld.add_action(  # Spawn alphabot2 in Gazebo
+        include_launch_file(
+            "ab2_gazebo",
+            "spawn_ab2.launch.py",
+            "alphabot2",
+            {
+                "x_pose": "0.0",
+                "y_pose": "0.0",
+            },
+        )
+    )
 
     # ld.add_action(Node(
     #     package="alphabot2_position",
@@ -96,7 +118,7 @@ def generate_launch_description():
     return ld
 
 
-def include_launch_file(package: str, launch_file_name: str, namespace: str) -> GroupAction:
+def include_launch_file(package: str, launch_file_name: str, namespace: str, params=None) -> GroupAction:
     return GroupAction(
         actions=[
             SetRemap(src="/cmd_vel", dst=f"/{namespace}/input_cmd_vel"),
@@ -110,7 +132,8 @@ def include_launch_file(package: str, launch_file_name: str, namespace: str) -> 
                         "launch",
                         launch_file_name,
                     )
-                )
+                ),
+                launch_arguments=params.items() if params is not None else {},
             ),
         ]
     )
