@@ -17,7 +17,7 @@ from isaaclab.scene import InteractiveSceneCfg
 from isaaclab.sim import SimulationCfg
 from isaaclab.terrains import TerrainImporterCfg
 from isaaclab.utils import configclass
-from isaaclab.utils.math import subtract_frame_transforms
+from isaaclab.utils.math import subtract_frame_transforms, quat_apply
 from isaaclab_assets import ANYDRIVE_3_SIMPLE_ACTUATOR_CFG  # isort: skip
 ##
 # Pre-defined configs
@@ -108,7 +108,7 @@ class CrazyflieEnvCfg(DirectRLEnvCfg):
     distance_to_goal_reward_scale = 15.0
 
     # random pose range
-    platform_spawn_range_xy = 1.0
+    platform_spawn_range_xy = 3.0
     platform_spawn_z = 0.0
     drone_min_height = 0.4
     drone_max_height = 0.6
@@ -126,8 +126,8 @@ class CrazyflieEnv(DirectRLEnv):
 
         # Velocity commands
         self._actions = torch.zeros(self.num_envs, gym.spaces.flatdim(self.single_action_space), device=self.device)
-        self._drone_target_lin_vel = torch.zeros(self.num_envs, 3, device=self.device)
-        self._drone_target_ang_vel = torch.zeros(self.num_envs, 3, device=self.device)
+        self._drone_target_lin_vel_b = torch.zeros(self.num_envs, 3, device=self.device)
+        self._drone_target_ang_vel_b = torch.zeros(self.num_envs, 3, device=self.device)
 
         # Platform wheel velocities for differential drive
         self._platform_wheel_vel = None
@@ -191,23 +191,29 @@ class CrazyflieEnv(DirectRLEnv):
     def _pre_physics_step(self, actions: torch.Tensor):
         self._actions = actions.clone().clamp(-1.0, 1.0)
 
-        self._drone_target_lin_vel[:, 0] = self._actions[:, 0] * self.cfg.max_linear_velocity
-        self._drone_target_lin_vel[:, 1] = self._actions[:, 1] * self.cfg.max_linear_velocity
-        self._drone_target_lin_vel[:, 2] = self._actions[:, 2] * self.cfg.max_linear_velocity
+        self._drone_target_lin_vel_b[:, 0] = self._actions[:, 0] * self.cfg.max_linear_velocity
+        self._drone_target_lin_vel_b[:, 1] = self._actions[:, 1] * self.cfg.max_linear_velocity
+        self._drone_target_lin_vel_b[:, 2] = self._actions[:, 2] * self.cfg.max_linear_velocity
 
-        self._drone_target_ang_vel[:, 2] = self._actions[:, 3] * self.cfg.max_angular_velocity_z
-
-        self._drone_target_ang_vel[:, 0] = 0.0
-        self._drone_target_ang_vel[:, 1] = 0.0
+        self._drone_target_ang_vel_b[:, 2] = self._actions[:, 3] * self.cfg.max_angular_velocity_z
+        self._drone_target_ang_vel_b[:, 0] = 0.0
+        self._drone_target_ang_vel_b[:, 1] = 0.0
 
     def _apply_action(self):
         dt = self.sim.cfg.dt * self.cfg.decimation
 
-        self._drone_target_ang_vel[:, 0] = 0.0
-        self._drone_target_ang_vel[:, 1] = 0.0
+        drone_target_lin_vel_w = quat_apply(
+            self._robot.data.root_quat_w,
+            self._drone_target_lin_vel_b
+        )
+
+        drone_target_ang_vel_w = quat_apply(
+            self._robot.data.root_quat_w,
+            self._drone_target_ang_vel_b
+        )
 
         self._robot.write_root_velocity_to_sim(
-            torch.cat([self._drone_target_lin_vel, self._drone_target_ang_vel], dim=-1)
+            torch.cat([drone_target_lin_vel_w, drone_target_ang_vel_w], dim=-1)
         )
 
         # Apply platform control
@@ -312,8 +318,8 @@ class CrazyflieEnv(DirectRLEnv):
             self.episode_length_buf = torch.randint_like(self.episode_length_buf, high=int(self.max_episode_length))
 
         self._actions[env_ids] = 0.0
-        self._drone_target_lin_vel[env_ids] = 0.0
-        self._drone_target_ang_vel[env_ids] = 0.0
+        self._drone_target_lin_vel_b[env_ids] = 0.0
+        self._drone_target_ang_vel_b[env_ids] = 0.0
 
         # Sample new commands
         self._desired_pos_w[env_ids, :] = self._platform.data.root_pos_w[env_ids, :]
