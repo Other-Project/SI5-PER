@@ -97,6 +97,9 @@ class CrazyflieEnvCfg(DirectRLEnvCfg):
     max_linear_velocity = 0.5  # m/s
     max_angular_velocity_z = 0.4  # rad/s
 
+    # tilt constraint
+    tilt_limit_deg = 30.0
+
     # alpha bot
     platform: ArticulationCfg = ALPHABOT_CFG.replace(
         prim_path="/World/envs/env_.*/Platform"
@@ -107,7 +110,7 @@ class CrazyflieEnvCfg(DirectRLEnvCfg):
     ang_vel_reward_scale = -0.01
     distance_to_goal_reward_scale = 15.0
     tilt_constraint_reward_scale = -5.0
-    unsafe_velocity_reward_scale = -0.5
+    unsafe_velocity_reward_scale = -1.0
 
     # random pose range
     platform_spawn_range_xy = 3.0
@@ -251,8 +254,9 @@ class CrazyflieEnv(DirectRLEnv):
         distance_to_goal_mapped = 1 - torch.tanh(distance_to_goal / 0.8)
         grav_b = self._robot.data.projected_gravity_b
         flatness = grav_b[:, 2].abs()
-        tilt_penalty = torch.square(torch.clamp(1.0 - flatness, min=0.0))
-        v_xy = torch.norm(self._robot.data.root_lin_vel_b[:, :2], dim=1)
+        tilt_penalty = torch.square(
+            torch.clamp(torch.cos(torch.deg2rad_(torch.tensor(self.cfg.tilt_limit_deg))) - flatness, min=0.0))
+        v_xy = torch.linalg.vector_norm(self._robot.data.root_lin_vel_b[:, :2], dim=1)
         v_z = self._robot.data.root_lin_vel_b[:, 2]
         unsafe_ratio = torch.relu(v_xy - torch.abs(v_z))
         rewards = {
