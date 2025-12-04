@@ -274,7 +274,7 @@ class CrazyflieEnv(DirectRLEnv):
 
     def _get_dones(self) -> tuple[torch.Tensor, torch.Tensor]:
         time_out = self.episode_length_buf >= self.max_episode_length - 1
-        died_pos = torch.logical_or(self._robot.data.root_pos_w[:, 2] <= 0, self._robot.data.root_pos_w[:, 2] > 2.0)
+        died_pos = torch.logical_or(self._robot.data.root_pos_w[:, 2] < 0, self._robot.data.root_pos_w[:, 2] > 2.0)
 
         grav_b = self._robot.data.projected_gravity_b
         died_tilt = grav_b[:, 2].abs() < 0.5
@@ -307,26 +307,28 @@ class CrazyflieEnv(DirectRLEnv):
         num_envs_to_reset = len(env_ids)
 
         # Reset platform position
-        random_xy = (torch.rand(num_envs_to_reset, 2,
-                                device=self.device) - 0.5) * 2.0 * self.cfg.platform_spawn_range_xy
+        random_xy = torch.zeros(num_envs_to_reset, 2, device=self.device).uniform_(
+            -self.cfg.platform_spawn_range_xy,
+            self.cfg.platform_spawn_range_xy
+        )
         random_z = torch.full((num_envs_to_reset, 1), self.cfg.platform_spawn_z, device=self.device)
         random_pos = torch.cat([random_xy, random_z], dim=-1)
         random_pos += self._terrain.env_origins[env_ids]
         default_root_state_platform = self._platform.data.default_root_state[env_ids]
         default_root_state_platform[:, :3] = random_pos
-        random_yaw = torch.rand(num_envs_to_reset, device=self.device) * 2.0 * 3.14159
-        default_root_state_platform[:, 3] = torch.cos(random_yaw / 2.0)  # w
-        default_root_state_platform[:, 6] = torch.sin(random_yaw / 2.0)  # z
+        random_yaw = torch.rand(num_envs_to_reset, device=self.device) * 3.14159
+        default_root_state_platform[:, 3] = torch.cos(random_yaw)  # w
+        default_root_state_platform[:, 6] = torch.sin(random_yaw)  # z
         self._platform.write_root_pose_to_sim(default_root_state_platform[:, :7], env_ids)
         self._platform_wheel_vel[env_ids] = 0.0
 
         # Set random linear velocity for the platform
-        random_lin_vel_x = (torch.rand(num_envs_to_reset,
-                                       device=self.device) - 0.5) * self.cfg.platform_max_linear_velocity
-        random_lin_vel_y = (torch.rand(num_envs_to_reset,
-                                       device=self.device) - 0.5) * self.cfg.platform_max_linear_velocity
-        self._platform_target_lin_vel[env_ids, 0] = random_lin_vel_x
-        self._platform_target_lin_vel[env_ids, 1] = random_lin_vel_y
+        random_lin_vel = torch.zeros(num_envs_to_reset, 2, device=self.device).uniform_(
+            -self.cfg.platform_max_linear_velocity,
+            self.cfg.platform_max_linear_velocity
+        )
+        self._platform_target_lin_vel[env_ids, 0] = random_lin_vel[:, 0]
+        self._platform_target_lin_vel[env_ids, 1] = random_lin_vel[:, 1]
         self._platform_target_lin_vel[env_ids, 2] = 0.0
 
         self._robot.reset(env_ids)
