@@ -252,6 +252,7 @@ class CrazyflieEnv(DirectRLEnv):
 
     def _spawn_platform(self, env_ids: torch.Tensor):
         num_envs_to_reset = len(env_ids)
+
         # Reset platform position
         random_xy = torch.zeros(num_envs_to_reset, 2, device=self.device).uniform_(
             -self.cfg.platform_spawn_range_xy,
@@ -267,6 +268,15 @@ class CrazyflieEnv(DirectRLEnv):
         default_root_state_platform[:, 6] = torch.sin(random_yaw)  # z
         self._platform.write_root_pose_to_sim(default_root_state_platform[:, :7], env_ids)
         self._platform_wheel_vel[env_ids] = 0.0
+
+        # Set random linear velocity for the platform
+        random_lin_vel = torch.zeros(num_envs_to_reset, 2, device=self.device).uniform_(
+            -self.cfg.platform_max_linear_velocity,
+            self.cfg.platform_max_linear_velocity
+        )
+        self._platform_target_lin_vel[env_ids, 0] = random_lin_vel[:, 0]
+        self._platform_target_lin_vel[env_ids, 1] = random_lin_vel[:, 1]
+        self._platform_target_lin_vel[env_ids, 2] = 0.0
 
     def _get_rewards(self) -> torch.Tensor:
         lin_vel = torch.sum(torch.square(self._robot.data.root_lin_vel_b), dim=1)
@@ -325,18 +335,7 @@ class CrazyflieEnv(DirectRLEnv):
         extras["Metrics/final_distance_to_goal"] = final_distance_to_goal.item()
         self.extras["log"].update(extras)
 
-        num_envs_to_reset = len(env_ids)
-
         self._spawn_platform(env_ids)
-
-        # Set random linear velocity for the platform
-        random_lin_vel = torch.zeros(num_envs_to_reset, 2, device=self.device).uniform_(
-            -self.cfg.platform_max_linear_velocity,
-            self.cfg.platform_max_linear_velocity
-        )
-        self._platform_target_lin_vel[env_ids, 0] = random_lin_vel[:, 0]
-        self._platform_target_lin_vel[env_ids, 1] = random_lin_vel[:, 1]
-        self._platform_target_lin_vel[env_ids, 2] = 0.0
 
         self._robot.reset(env_ids)
         super()._reset_idx(env_ids)
