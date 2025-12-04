@@ -17,6 +17,12 @@
 
 #v(15pt)
 
+#align(center, text(lang: "en", size: 18pt, weight: "medium", style: "oblique")[
+  Description of Work
+])
+
+#v(15pt)
+
 #box(fill: gray.lighten(85%), width: 100%, radius: 0.25cm, pad(x: 0.5cm, y: 0.5cm)[
   #text(size: 20pt, weight: "bold")[PER2025-057 - Développement]
   #linebreak()

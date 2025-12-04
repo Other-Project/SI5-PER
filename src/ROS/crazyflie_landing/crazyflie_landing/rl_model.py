@@ -1,7 +1,7 @@
 import numpy as np
 import onnxruntime as ort
 import rclpy
-from geometry_msgs.msg import Twist
+from geometry_msgs.msg import Point, Quaternion, Twist, Vector3
 from nav_msgs.msg import Odometry
 from rclpy.node import Node
 
@@ -58,28 +58,24 @@ class RLModelNode(Node):
     def target_odometry_callback(self, msg: Odometry):
         self.target_pose = msg.pose.pose
 
+    def vectToNumpy(self, vec: Vector3 | Point) -> np.ndarray:
+        return np.array([vec.x, vec.y, vec.z])
+
+    def quaternionToNumpy(self, quat: Quaternion) -> np.ndarray:
+        return np.array([quat.w, quat.x, quat.y, quat.z])
+
     def _build_observation_vector(self):
         if self.current_pose is None or self.current_twist is None or self.target_pose is None:
             return None  # No data yet
 
-        root_lin_vel_b = [
-            self.current_twist.linear.x,
-            self.current_twist.linear.y,
-            self.current_twist.linear.z,
-        ]
-        root_ang_b = [
-            self.current_pose.orientation.w,
-            self.current_pose.orientation.x,
-            self.current_pose.orientation.y,
-            self.current_pose.orientation.z,
-        ]
-        desired_pos_b = [
-            self.target_pose.position.x - self.current_pose.position.x,
-            self.target_pose.position.y - self.current_pose.position.y,
-            self.target_pose.position.z + 0.1 - self.current_pose.position.z,
-        ]
+        drone_lin_vel_b = self.vectToNumpy(self.current_twist.linear)
+        drone_pos_w = self.vectToNumpy(self.current_pose.position)
+        drone_quat_w = self.quaternionToNumpy(self.current_pose.orientation)
+        target_pos_w = self.vectToNumpy(self.target_pose.position)
+        target_pos_w[2] += 0.1  # Target slightly above platform
+        desired_pos_b = target_pos_w - drone_pos_w
 
-        return np.array(root_lin_vel_b + root_ang_b + desired_pos_b)
+        return np.concatenate([drone_lin_vel_b, drone_quat_w, desired_pos_b])
 
     def control_loop(self):
         """Main loop: Observation -> Inference -> Action"""

@@ -9,6 +9,18 @@ from launch_ros.actions import Node
 
 
 def generate_launch_description():
+    # Launch configuration variables specific to simulation
+    x_pose = LaunchConfiguration("x_pose", default="0.0")
+    y_pose = LaunchConfiguration("y_pose", default="0.0")
+    z_pose = LaunchConfiguration("z_pose", default="0.1")
+    z_angle = LaunchConfiguration("z_angle", default="0.0")
+
+    # Declare the launch arguments
+    declare_x_position_cmd = DeclareLaunchArgument("x_pose", default_value="0.0", description="")
+    declare_y_position_cmd = DeclareLaunchArgument("y_pose", default_value="0.0", description="")
+    declare_z_position_cmd = DeclareLaunchArgument("z_pose", default_value="0.1", description="")
+    declare_z_angle_cmd = DeclareLaunchArgument("z_angle", default_value="0.0", description="")
+
     # Package and xacro path
     pkg_share = get_package_share_directory("crazyflie_description")
     xacro_file = os.path.join(pkg_share, "urdf", "crazyflie_body.xacro")
@@ -43,13 +55,13 @@ def generate_launch_description():
             "-string",
             robot_description_config,
             "-x",
-            "-1.0",  # X position
+            x_pose,  # X position
             "-y",
-            "1.0",  # Y position
+            y_pose,  # Y position
             "-z",
-            "1.0",  # Z position (height)
+            z_pose,  # Z position (height)
             "-Y",
-            "1",  # Yaw rotation
+            z_angle,  # Yaw rotation
         ],
         output="screen",
     )
@@ -76,6 +88,10 @@ def generate_launch_description():
 
     return LaunchDescription(
         [
+            declare_x_position_cmd,
+            declare_y_position_cmd,
+            declare_z_position_cmd,
+            declare_z_angle_cmd,
             robot_name_arg,
             robot_state_publisher,
             spawn_robot,
