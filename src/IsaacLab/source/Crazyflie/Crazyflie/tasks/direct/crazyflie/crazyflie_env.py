@@ -113,7 +113,7 @@ class CrazyflieEnvCfg(DirectRLEnvCfg):
     unsafe_velocity_reward_scale = -1.0
 
     # random pose range
-    platform_spawn_range_xy = 1.5
+    platform_spawn_range_xy = 3
     platform_spawn_z = 0.0
     drone_min_height = 0.3
     drone_max_height = 0.8
