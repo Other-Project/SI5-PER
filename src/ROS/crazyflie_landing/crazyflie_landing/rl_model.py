@@ -3,10 +3,10 @@ import onnxruntime as ort
 import rclpy
 from geometry_msgs.msg import Point, Quaternion, Twist, Vector3
 from nav_msgs.msg import Odometry
-from rclpy.node import Node
+from rclpy.lifecycle import LifecycleNode, State, TransitionCallbackReturn
 
 
-class RLModelNode(Node):
+class RLModelNode(LifecycleNode):
     def __init__(self):
         super().__init__("crazyflie_landing")
 
@@ -16,7 +16,7 @@ class RLModelNode(Node):
 
         robot_prefix = self.get_parameter("robot_prefix").value
         platform_prefix = self.get_parameter("platform_prefix").value
-        self.dt = 1 / 100  # Must be the same as during training
+        self.dt = 1 / 50  # Must be the same as during training
         self.onnx_path = self.get_parameter("onnx_path").value
         if self.onnx_path == "":
             return  # Do nothing if no path provided
@@ -31,25 +31,74 @@ class RLModelNode(Node):
         self.output_shape = self.ort_session.get_outputs()[0].shape
         self.get_logger().info(f"Model loaded: {self.input_name} {self.input_shape} -> {self.output_name} {self.output_shape}")
 
+        # Topics
+        self.robot_odom_topic = f"{robot_prefix}/odom"
+        self.platform_odom_topic = f"{platform_prefix}/odom"
+        self.robot_cmd_topic = f"{robot_prefix}/cmd_vel"
+
+        self.trigger_configure()
+        self.trigger_activate()
+
+    def on_configure(self, state: State) -> TransitionCallbackReturn:
+        """
+        Configure the node.
+        """
+        
+        status = super().on_configure(state)
+        if status != TransitionCallbackReturn.SUCCESS:
+            return status
+
         # Subscribe to odometry of both crazyflie and platform
-        self.subscriber = self.create_subscription(Odometry, robot_prefix + "/odom", self.odometry_callback, 10)
-        self.subscriber = self.create_subscription(Odometry, platform_prefix + "/odom", self.target_odometry_callback, 10)
+        self._robot_odom_sub = self.create_subscription(Odometry, self.robot_odom_topic, self.odometry_callback, 10)
+        self._platform_odom_sub = self.create_subscription(Odometry, self.platform_odom_topic, self.target_odometry_callback, 10)
 
         # Publisher for action commands
-        self.publisher_ = self.create_publisher(Twist, robot_prefix + "/cmd_vel", 10)
+        self._robot_cmd_pub = self.create_lifecycle_publisher(Twist, self.robot_cmd_topic, 10)
 
-        # State variables
+        # Timer for control loop (to ensure fixed frequency)
+        self._timer = self.create_timer(self.dt, self.control_loop, autostart=False)
+
+        return TransitionCallbackReturn.SUCCESS
+
+    def on_cleanup(self, state):
+        """
+        Cleanup the node.
+        """
+
+        self._timer.cancel()
+        self.destroy_subscription(self._robot_odom_sub)
+        self.destroy_subscription(self._platform_odom_sub)
+        self.destroy_publisher(self._robot_cmd_pub)
+
+        return super().on_cleanup(state)
+
+    def on_activate(self, state: State) -> TransitionCallbackReturn:
+        """
+        Activate the node for landing.
+        """
+
+        status = super().on_activate(state)
+        if status != TransitionCallbackReturn.SUCCESS:
+            return status
+
         self.current_pose = None
         self.current_twist = None
         self.target_pose = None
 
-        # Timer for control loop (to ensure fixed frequency)
-        self.timer = self.create_timer(self.dt, self.control_loop, autostart=False)
-        self.tmp = self.create_timer(0.1, self.wait)  # TODO: Remove this
+        self._timer.reset()
 
-    def wait(self):
-        self.timer.reset()
-        self.tmp.cancel()
+        self.get_logger().info("Starting landing procedure.")
+        return TransitionCallbackReturn.SUCCESS
+
+    def on_deactivate(self, state: State) -> TransitionCallbackReturn:
+        """
+        Deactivate the node and stop landing.
+        """
+
+        self._timer.cancel()
+
+        self.get_logger().info("Stopping landing procedure.")
+        return super().on_deactivate(state)
 
     def odometry_callback(self, msg: Odometry):
         self.current_pose = msg.pose.pose
@@ -114,7 +163,7 @@ class RLModelNode(Node):
         msg.angular.x = 0.0  # ignored
         msg.angular.y = 0.0  # ignored
         msg.angular.z = float(angular_velocity_z * 0.4)
-        self.publisher_.publish(msg)
+        self._robot_cmd_pub.publish(msg)
 
 
 def main(args=None):
