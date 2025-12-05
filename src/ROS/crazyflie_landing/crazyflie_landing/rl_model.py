@@ -16,7 +16,7 @@ class RLModelNode(LifecycleNode):
 
         robot_prefix = self.get_parameter("robot_prefix").value
         platform_prefix = self.get_parameter("platform_prefix").value
-        self.dt = 1 / 50  # Must be the same as during training
+        self.dt = 1 / 100  # Must be the same as during training
         self.onnx_path = self.get_parameter("onnx_path").value
         if self.onnx_path == "":
             return  # Do nothing if no path provided
@@ -37,13 +37,12 @@ class RLModelNode(LifecycleNode):
         self.robot_cmd_topic = f"{robot_prefix}/cmd_vel"
 
         self.trigger_configure()
-        self.trigger_activate()
 
     def on_configure(self, state: State) -> TransitionCallbackReturn:
         """
         Configure the node.
         """
-        
+
         status = super().on_configure(state)
         if status != TransitionCallbackReturn.SUCCESS:
             return status

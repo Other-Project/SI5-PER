@@ -104,6 +104,14 @@ def generate_launch_description():
         )
     )
 
+    ld.add_action(
+        Node(
+            package="crazyflie_control_manager",
+            executable="crazyflie_control_manager",
+            output="screen",
+        )
+    )
+
     # ld.add_action(
     #     Node(
     #         package="rviz2",
