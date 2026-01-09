@@ -113,7 +113,7 @@ class CrazyflieEnvCfg(DirectRLEnvCfg):
     unsafe_velocity_reward_scale = -1.0
 
     # random pose range
-    platform_spawn_range_xy = 3.0
+    platform_spawn_range_xy = 2.0
     platform_spawn_z = 0.0
     drone_min_height = 0.4
     drone_max_height = 0.6
@@ -347,8 +347,7 @@ class CrazyflieEnv(DirectRLEnv):
         joint_pos = self._robot.data.default_joint_pos[env_ids]
         joint_vel = self._robot.data.default_joint_vel[env_ids]
         default_root_state = self._robot.data.default_root_state[env_ids]
-        default_root_state[:, 2] = (torch.rand(len(env_ids), device=self.device) * (
-                self.cfg.drone_max_height - self.cfg.drone_min_height) + self.cfg.drone_min_height)
+        default_root_state[:, 2].uniform_(self.cfg.drone_min_height, self.cfg.drone_max_height)
         default_root_state[:, :3] += self._terrain.env_origins[env_ids]
         self._robot.write_root_pose_to_sim(default_root_state[:, :7], env_ids)
         self._robot.write_root_velocity_to_sim(default_root_state[:, 7:], env_ids)
