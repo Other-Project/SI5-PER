@@ -43,10 +43,14 @@ class Position(Node):
 
 def main(args=None):
     rclpy.init(args=args)
-    position = Position()
-    rclpy.spin(position)
-    position.destroy_node()
-    rclpy.shutdown()
+    node = Position()
+    try:
+        rclpy.spin(node)
+    except KeyboardInterrupt:
+        pass
+    finally:
+        node.destroy_node()
+        rclpy.try_shutdown()
 
 
 if __name__ == "__main__":

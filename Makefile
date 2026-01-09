@@ -45,6 +45,14 @@ teleop_bot_joy:
 		ros2 launch teleop_twist_joy teleop-launch.py \
 			config_filepath:="$(CURDIR)/utils/xone.config.yaml" joy_vel:='alphabot2/input_cmd_vel'
 
+package:
+	read -p "Name: " name; \
+	read -p "Description: " desc; \
+	. /opt/ros/*/setup.sh && \
+	ros2 pkg create --build-type ament_python \
+		--maintainer-email "evan.galli@etu.univ-cotedazur.fr" --maintainer-name "Evan Galli" --license "MIT" \
+		--destination-directory "./src/ROS/" --node-name "node" --description "$${desc}" "$${name}"
+
 isaac:
 	uv sync --directory src/IsaacLab
 	. src/IsaacLab/.venv/bin/activate && \

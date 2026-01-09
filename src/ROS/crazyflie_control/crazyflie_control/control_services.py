@@ -98,12 +98,14 @@ class ControlServices(Node):
 
 def main(args=None):
     rclpy.init(args=args)
-
-    control_services = ControlServices()
-
-    rclpy.spin(control_services)
-
-    rclpy.shutdown()
+    node = ControlServices()
+    try:
+        rclpy.spin(node)
+    except KeyboardInterrupt:
+        pass
+    finally:
+        node.destroy_node()
+        rclpy.try_shutdown()
 
 
 if __name__ == "__main__":
