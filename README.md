@@ -4,10 +4,10 @@
     <img src=".assets/ab2-platform.png" width="20%" alt="Alphabot 2" />
     <img src=".assets/crazyflie.png" width="20%" alt="Crazyflie 2.1+" /><br/>
     <a href="https://releases.ubuntu.com/noble/">
-        <img alt="Ubuntu 24.04" src="https://img.shields.io/badge/-UBUNTU%2024%2E04-blue?style=flat-square&logo=ubuntu&logoColor=white" />
+        <img alt="Ubuntu 24.04" src="https://img.shields.io/badge/-UBUNTU%2024%2E04-orange?style=flat-square&logo=ubuntu&logoColor=white" />
     </a>
     <a href="https://docs.ros.org/en/jazzy/index.html">
-        <img alt="ROS Jazzy" src="https://img.shields.io/badge/-ROS%20JAZZY-orange?style=flat-square&logo=ros" />
+        <img alt="ROS Jazzy" src="https://img.shields.io/badge/-ROS%20JAZZY-blue?style=flat-square&logo=ros" />
     </a><br />
     <span>Work carried out by <a href="https://github.com/komi-assimpah">Komi Jean-Paul Assimpah</a>, <a href="https://github.com/AlbanFALCOZ">Alban Falcoz</a>, <a href="https://github.com/06Games">Evan Galli</a> and <a href="https://github.com/Alexandre-Gripari">Gripari Alexandre</a>
     <br/>as part of the <b>Study and Research Project</b>.</span>
