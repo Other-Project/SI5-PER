@@ -93,7 +93,7 @@ class CrazyflieEnvCfg(DirectRLEnvCfg):
     # drone
     robot: ArticulationCfg = CRAZYFLIE_CFG.replace(prim_path="/World/envs/env_.*/Robot")
 
-    # Velocity command limits
+    # velocity command limits
     max_linear_velocity = 0.5  # m/s
     max_angular_velocity_z = 0.4  # rad/s
 
@@ -115,11 +115,11 @@ class CrazyflieEnvCfg(DirectRLEnvCfg):
     # random pose range
     platform_spawn_range_xy = 2.0
     platform_spawn_z = 0.0
-    drone_min_height = 0.4
+    drone_min_height = 0.0
     drone_max_height = 0.6
 
     # Alpha bot movement parameters
-    platform_max_linear_velocity = 0.5  # m/s
+    platform_max_linear_velocity = 0.25  # m/s
     platform_max_angular_velocity = 1.0  # rad/s
 
 
