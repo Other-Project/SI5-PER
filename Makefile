@@ -2,6 +2,7 @@ all: build
 
 install:
 	git submodule update --init --recursive
+	make -C deps/crazyflie-firmware cf2_defconfig bindings_python
 	mkdir -p deps/Alphabot2/ab2_gazebo/include
 	uv sync --directory src/ROS
 
@@ -15,13 +16,13 @@ build: install
 			--base-paths src/ROS deps/Alphabot2 --cmake-args -DBUILD_TESTING=ON
 
 sim: build
-	export PYTHONPATH='src/ROS/.venv/lib/python3.12/site-packages' && \
+	export PYTHONPATH='deps/crazyflie-firmware/build:src/ROS/.venv/lib/python3.12/site-packages' && \
 	. src/ROS/.venv/bin/activate && \
 	. .out/ros_install/setup.sh && \
 		ros2 launch crazyflie_launch simulation.launch.py
 
 sim_carto: build
-	export PYTHONPATH='src/ROS/.venv/lib/python3.12/site-packages' && \
+	export PYTHONPATH='deps/crazyflie-firmware/build:src/ROS/.venv/lib/python3.12/site-packages' && \
 	. src/ROS/.venv/bin/activate && \
 	. .out/ros_install/setup.sh && \
 		ros2 launch crazyflie_launch cartography_simulation.launch.py
@@ -35,6 +36,7 @@ teleop_bot:
 	. /opt/ros/*/setup.sh && \
 		ros2 run teleop_twist_keyboard teleop_twist_keyboard \
 			--ros-args --remap cmd_vel:=alphabot2/input_cmd_vel
+
 teleop_drone_joy:
 	. /opt/ros/*/setup.sh && \
 		ros2 launch teleop_twist_joy teleop-launch.py \

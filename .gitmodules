@@ -1,3 +1,6 @@
 [submodule "deps/Alphabot2"]
 	path = deps/Alphabot2
 	url = https://github.com/gerald-rocher/Alphabot2.git
+[submodule "deps/crazyflie-firmware"]
+	path = deps/crazyflie-firmware
+	url = https://github.com/bitcraze/crazyflie-firmware.git
