@@ -4,3 +4,6 @@
 [submodule "deps/crazyflie-firmware"]
 	path = deps/crazyflie-firmware
 	url = https://github.com/bitcraze/crazyflie-firmware.git
+[submodule "deps/crazysim"]
+	path = deps/crazysim
+	url = https://github.com/gtfactslab/CrazySim

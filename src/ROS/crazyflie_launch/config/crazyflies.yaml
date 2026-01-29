@@ -1,0 +1,21 @@
+robots:
+  cf_1:
+      enabled: true
+      uri: udp://0.0.0.0:19850
+      initial_position: [0.5, 0.5, 0.0]
+      type: cf_sim
+
+robot_types:
+  cf_sim:
+    motion_capture:
+      tracking: "vendor"
+    big_quad: false
+    firmware_logging:
+      enabled: true
+      default_topics:
+        pose:
+          frequency: 10
+    motion_capture:
+      enabled: false
+      marker_configurations: {}
+      dynamics_configurations: {}

@@ -14,7 +14,7 @@ def generate_launch_description():
     use_sim_time = LaunchConfiguration("use_sim_time", default="true")
 
     # Start Gazebo Harmonic (empty world)
-    ld.add_action(
+    """ ld.add_action(
         IncludeLaunchDescription(
             PythonLaunchDescriptionSource(os.path.join(get_package_share_directory("ros_gz_sim"), "launch", "gz_sim.launch.py")),
             launch_arguments={"gz_args": ["-r -s ", "empty.sdf"]}.items(),
@@ -27,7 +27,7 @@ def generate_launch_description():
         )
     )
 
-    """ ld.add_action(  # Spawn crazyflie in Gazebo
+    ld.add_action(  # Spawn crazyflie in Gazebo
         include_launch_file(
             "crazyflie_description",
             "spawn_crazyflie_gz.launch.py",
@@ -44,7 +44,11 @@ def generate_launch_description():
     ld.add_action(
         IncludeLaunchDescription(
             PythonLaunchDescriptionSource(os.path.join(get_package_share_directory("crazyflie"), "launch", "launch.py")),
-            launch_arguments={"backend": "sim"}.items(),
+            launch_arguments={
+                "backend": "cflib",
+                "use_sim_time": use_sim_time,
+                "crazyflies_yaml_file": os.path.join(get_package_share_directory("crazyflie_launch"), "config", "crazyflies.yaml"),
+            }.items(),
         )
     )
 
