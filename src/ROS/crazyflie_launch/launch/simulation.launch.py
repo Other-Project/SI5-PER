@@ -17,12 +17,17 @@ def generate_launch_description():
     ld.add_action(
         IncludeLaunchDescription(
             PythonLaunchDescriptionSource(os.path.join(get_package_share_directory("ros_gz_sim"), "launch", "gz_sim.launch.py")),
-            launch_arguments={"gz_args": "-r empty.sdf"}.items(),
+            launch_arguments={"gz_args": ["-r -s ", "empty.sdf"]}.items(),
         )
     )
-    ld.add_action(AppendEnvironmentVariable("GZ_SIM_RESOURCE_PATH", os.path.join(get_package_share_directory("ab2_gazebo"), "models")))
+    ld.add_action(
+        IncludeLaunchDescription(
+            PythonLaunchDescriptionSource(os.path.join(get_package_share_directory("ros_gz_sim"), "launch", "gz_sim.launch.py")),
+            launch_arguments={"gz_args": "-g "}.items(),
+        )
+    )
 
-    ld.add_action(  # Spawn crazyflie in Gazebo
+    """ ld.add_action(  # Spawn crazyflie in Gazebo
         include_launch_file(
             "crazyflie_description",
             "spawn_crazyflie_gz.launch.py",
@@ -34,7 +39,17 @@ def generate_launch_description():
                 "z_angle": "0.0",
             },
         )
+    ) """
+
+    ld.add_action(
+        IncludeLaunchDescription(
+            PythonLaunchDescriptionSource(os.path.join(get_package_share_directory("crazyflie"), "launch", "launch.py")),
+            launch_arguments={"backend": "sim"}.items(),
+        )
     )
+
+    ld.add_action(AppendEnvironmentVariable("GZ_SIM_RESOURCE_PATH", os.path.join(get_package_share_directory("ab2_gazebo"), "models")))
+
     ld.add_action(  # Spawn alphabot2 in Gazebo
         include_launch_file(
             "ab2_gazebo",
@@ -44,6 +59,15 @@ def generate_launch_description():
                 "x_pose": "0.0",
                 "y_pose": "0.0",
             },
+        )
+    )
+
+    ld.add_action(
+        IncludeLaunchDescription(
+            PythonLaunchDescriptionSource(
+                os.path.join(get_package_share_directory("ab2_gazebo"), "launch", "robot_state_publisher.launch.py")
+            ),
+            launch_arguments={"use_sim_time": use_sim_time, "frame_prefix": "alphabot2"}.items(),
         )
     )
 
@@ -81,19 +105,19 @@ def generate_launch_description():
         )
     )
 
-    # ld.add_action(
-    #     Node(
-    #         package="crazyflie_control",
-    #         executable="control_services",
-    #         output="screen",
-    #         parameters=[
-    #             {"hover_height": 0.5},
-    #             {"robot_prefix": "/crazyflie"},
-    #             {"incoming_twist_topic": "/crazyflie/input_cmd_vel"},
-    #             {"max_ang_z_rate": 0.4},
-    #         ],
-    #     )
-    # )
+    ld.add_action(
+        Node(
+            package="crazyflie_control",
+            executable="control_services",
+            output="screen",
+            parameters=[
+                {"hover_height": 0.5},
+                {"robot_prefix": "/crazyflie"},
+                {"incoming_twist_topic": "/crazyflie/input_cmd_vel"},
+                {"max_ang_z_rate": 0.4},
+            ],
+        )
+    )
 
     ld.add_action(
         IncludeLaunchDescription(

@@ -2,6 +2,7 @@
   "files.insertFinalNewline": true,
   "python.analysis.extraPaths": [
       "/opt/ros/jazzy/lib/python3.12/site-packages/",
+      "deps/crazyflie-firmware/build",
       "src/ROS/.venv/lib/python3.12/site-packages/",
       "src/IsaacLab/.venv/lib/python3.11/site-packages/"
   ],
