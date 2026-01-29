@@ -8,5 +8,6 @@
   "cmake.ignoreCMakeListsMissing": true,
   "urdf-visualizer.packages": {
     "ab2_description": "deps/Alphabot2/ab2_description"
-  }
+  },
+  "git.detectSubmodules": false
 }
