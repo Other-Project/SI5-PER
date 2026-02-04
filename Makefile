@@ -27,6 +27,7 @@ sim_carto: build
 		ros2 launch crazyflie_launch cartography_simulation.launch.py
 
 teleop_drone:
+	ros2 topic pub -1 /crazyflie/land std_msgs/Bool "data: False" 
 	. /opt/ros/*/setup.sh && \
 		ros2 run teleop_twist_keyboard teleop_twist_keyboard \
 			--ros-args --remap cmd_vel:=crazyflie/input_cmd_vel
@@ -36,6 +37,7 @@ teleop_bot:
 		ros2 run teleop_twist_keyboard teleop_twist_keyboard \
 			--ros-args --remap cmd_vel:=alphabot2/input_cmd_vel
 teleop_drone_joy:
+	ros2 topic pub -1 /crazyflie/land std_msgs/Bool "data: False" 
 	. /opt/ros/*/setup.sh && \
 		ros2 launch teleop_twist_joy teleop-launch.py \
 			config_filepath:="$(CURDIR)/utils/xone.config.yaml" joy_vel:='crazyflie/input_cmd_vel'
