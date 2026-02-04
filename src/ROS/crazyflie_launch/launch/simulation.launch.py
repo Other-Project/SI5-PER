@@ -48,6 +48,7 @@ def generate_launch_description():
                 "backend": "cflib",
                 "use_sim_time": use_sim_time,
                 "crazyflies_yaml_file": os.path.join(get_package_share_directory("crazyflie_launch"), "config", "crazyflies.yaml"),
+                "gui": "false",
             }.items(),
         )
     )
