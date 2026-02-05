@@ -32,6 +32,8 @@ teleop_drone:
 	. /opt/ros/*/setup.sh && \
 		ros2 run teleop_twist_keyboard teleop_twist_keyboard \
 			--ros-args --remap cmd_vel:=crazyflie/input_cmd_vel
+	. /opt/ros/*/setup.sh && \
+		ros2 topic pub -1 /crazyflie/land std_msgs/Bool "data: True" 
 
 teleop_bot:
 	. /opt/ros/*/setup.sh && \
@@ -43,6 +45,8 @@ teleop_drone_joy:
 	. /opt/ros/*/setup.sh && \
 		ros2 launch teleop_twist_joy teleop-launch.py \
 			config_filepath:="$(CURDIR)/utils/xone.config.yaml" joy_vel:='crazyflie/input_cmd_vel'
+	. /opt/ros/*/setup.sh && \
+		ros2 topic pub -1 /crazyflie/land std_msgs/Bool "data: True" 
 
 teleop_bot_joy:
 	. /opt/ros/*/setup.sh && \

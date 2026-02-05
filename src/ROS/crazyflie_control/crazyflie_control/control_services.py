@@ -9,7 +9,7 @@ class ControlServices(Node):
         super().__init__("control_services")
         self.declare_parameter("hover_height", 0.5)
         self.declare_parameter("robot_prefix", "/crazyflie")
-        self.declare_parameter("incoming_twist_topic", "/cmd_vel")
+        self.declare_parameter("incoming_twist_topic", "/crazyflie/input_cmd_vel")
         self.declare_parameter("max_ang_z_rate", 0.4)
 
         hover_height = self.get_parameter("hover_height").value
@@ -56,12 +56,11 @@ class ControlServices(Node):
 
         # If flying and if the height command is negative, and it is below a certain height
         # then consider it a land
-        if height_command < 0 and self.is_flying:
-            if self.current_pose.position.z < 0.1:
-                new_cmd_msg.linear.z = 0.0
-                self.is_flying = False
-                self.keep_height = False
-                self.get_logger().info("Landing completed")
+        if height_command < 0 and self.is_flying and self.current_pose.position.z < 0.1:
+            new_cmd_msg.linear.z = 0.0
+            self.is_flying = False
+            self.keep_height = False
+            self.get_logger().info("Landing completed")
 
         # Cap the angular rate command in the z axis
         if abs(msg.angular.z) > self.max_ang_z_rate:
@@ -78,9 +77,8 @@ class ControlServices(Node):
                 new_cmd_msg.linear.z = error
 
         # If there is control in height and the drone is flying, stop maintaining the height
-        if abs(height_command) > tolerance and self.is_flying:
-            if self.keep_height:
-                self.keep_height = False
+        if abs(height_command) > tolerance and self.is_flying and self.keep_height:
+            self.keep_height = False
 
         self.publisher_.publish(new_cmd_msg)
 

@@ -75,6 +75,7 @@ def generate_launch_description():
                         get_package_share_directory("crazyflie_launch"),
                         "config/crazyflie_policy.onnx",
                     ),
+                    "robot_cmd_topic": "/crazyflie/input_cmd_vel",
                     "use_sim_time": use_sim_time,
                 },
             ],
