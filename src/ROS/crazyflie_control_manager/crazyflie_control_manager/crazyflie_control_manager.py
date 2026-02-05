@@ -17,6 +17,9 @@ class ControlManager(Node):
 
     def land_callback(self, msg: Bool):
         state = self.landing_manager.get_state()
+        if state is None:
+            self.get_logger().error("Failed to get current state of landing manager")
+            return
         if msg.data and state.id == State.PRIMARY_STATE_INACTIVE:
             self.landing_manager.set_state(Transition.TRANSITION_ACTIVATE)
         elif not msg.data and state.id == State.PRIMARY_STATE_ACTIVE:
