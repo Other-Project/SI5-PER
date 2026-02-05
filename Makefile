@@ -14,7 +14,7 @@ install_sim:
 	mkdir -p deps/crazysim/crazyflie-firmware/sitl_make/build
 	cmake -S deps/crazysim/crazyflie-firmware/sitl_make -B deps/crazysim/crazyflie-firmware/sitl_make/build
 	export PYTHONPATH='src/ROS/.venv/lib/python3.12/site-packages' && \
-	. src/ROS/.venv/bin/activate && \
+		. src/ROS/.venv/bin/activate && \
 		make -C deps/crazysim/crazyflie-firmware/sitl_make/build all
 
 
