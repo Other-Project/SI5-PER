@@ -13,12 +13,14 @@ class ControlServices(Node):
         # Declare and retrieve parameters
         self.declare_parameter("robot_prefix", "/crazyflie")
         self.declare_parameter("incoming_twist_topic", "/crazyflie/input_cmd_vel")
+        self.declare_parameter("max_linear", 0.5)
         self.declare_parameter("max_ang_z_rate", 0.4)
         self.declare_parameter("height_hold_gain", 1.0)
         self.declare_parameter("flying_threshold", 0.1)
 
         robot_prefix = self.get_parameter("robot_prefix").value
         incoming_topic = self.get_parameter("incoming_twist_topic").value
+        self.max_linear = self.get_parameter("max_linear").value
         self.max_ang_z = self.get_parameter("max_ang_z_rate").value
         self.kp_z = self.get_parameter("height_hold_gain").value
         self.fly_threshold = self.get_parameter("flying_threshold").value
@@ -92,11 +94,21 @@ class ControlServices(Node):
                 error = self.desired_z - self.current_pos.z
                 out_msg.linear.z = error * self.kp_z
 
-        # Limit angular rate
-        if abs(out_msg.angular.z) > self.max_ang_z:
-            out_msg.angular.z = math.copysign(self.max_ang_z, out_msg.angular.z)
+        # Clip outputs
+        xy_mag = math.hypot(out_msg.linear.x, out_msg.linear.y)  # Clip by magnitude to preserves direction
+        if xy_mag > self.max_linear:
+            scale = self.max_linear / xy_mag
+            out_msg.linear.x *= scale
+            out_msg.linear.y *= scale
+        out_msg.linear.z = self.clamp(out_msg.linear.z, self.max_linear)
+        out_msg.angular.x = 0.0
+        out_msg.angular.y = 0.0
+        out_msg.angular.z = self.clamp(out_msg.angular.z, self.max_ang_z)
 
         self.cmd_pub.publish(out_msg)
+
+    def clamp(self, value, limit):
+        return max(min(value, limit), -limit)
 
 
 def main(args=None):
