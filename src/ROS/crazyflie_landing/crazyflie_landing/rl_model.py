@@ -152,10 +152,10 @@ class RLModelNode(LifecycleNode):
 
         # Publish Twist message to control service
         twist_msg = Twist()
-        twist_msg.linear.x = float(velocity_x)
-        twist_msg.linear.y = float(velocity_y)
-        twist_msg.linear.z = float(velocity_z)
-        twist_msg.angular.z = float(angular_velocity_z)
+        twist_msg.linear.x = float(velocity_x * 0.5)
+        twist_msg.linear.y = float(velocity_y * 0.5)
+        twist_msg.linear.z = float(velocity_z * 0.5)
+        twist_msg.angular.z = float(angular_velocity_z * 0.4)
         self._robot_cmd_pub.publish(twist_msg)
 
 
