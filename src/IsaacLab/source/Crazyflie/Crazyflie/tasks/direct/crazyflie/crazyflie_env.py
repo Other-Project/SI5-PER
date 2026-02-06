@@ -7,7 +7,10 @@ from __future__ import annotations
 
 import gymnasium as gym
 import isaaclab.sim as sim_utils
+import rclpy
+import tf2_ros
 import torch
+from geometry_msgs.msg import TransformStamped
 from isaaclab.assets import Articulation, ArticulationCfg
 from isaaclab.envs import DirectRLEnv, DirectRLEnvCfg
 from isaaclab.envs.ui import BaseEnvWindow
@@ -23,6 +26,8 @@ from isaaclab_assets import ANYDRIVE_3_SIMPLE_ACTUATOR_CFG  # isort: skip
 # Pre-defined configs
 ##
 from isaaclab_assets import CRAZYFLIE_CFG  # isort: skip
+from nav_msgs.msg import Odometry
+from rclpy.node import Node
 
 from ....assets import ALPHABOT_CFG, ALPHABOT_JOINTS_NAMES, ACTUATORS_LEFT_WHEEL, ACTUATORS_RIGHT_WHEEL
 
@@ -176,6 +181,56 @@ class CrazyflieEnv(DirectRLEnv):
         # add handle for debug visualization (this is set to a valid handle inside set_debug_vis)
         self.set_debug_vis(self.cfg.debug_vis)
 
+        # setup ROS monitoring
+        self._setup_ros_monitoring()
+
+    def _setup_ros_monitoring(self):
+        if not rclpy.ok():
+            rclpy.init(domain_id=0)
+
+        # Creation of a ROS node for publishing odometry data
+        self.ros_node = rclpy.create_node("isaac_lab_crazyflie_bridge")
+
+        # Publisher
+        self.ros_odom_pub = self.ros_node.create_publisher(Odometry, "/crazyflie/odom", 10)
+
+        print("[INFO] Bridge ROS 2 initialized")
+
+    def _publish_ros_data(self):
+        env_id = 0
+
+        pos = self._robot.data.root_pos_w[env_id]
+        quat = self._robot.data.root_quat_w[env_id]
+
+        lin_vel = self._robot.data.root_lin_vel_w[env_id]
+        ang_vel = self._robot.data.root_ang_vel_w[env_id]
+
+        odom_msg = Odometry()
+        current_time = self.ros_node.get_clock().now().to_msg()
+
+        odom_msg.header.stamp = current_time
+        odom_msg.header.frame_id = "map"
+        odom_msg.child_frame_id = "base_link"
+
+        odom_msg.pose.pose.position.x = float(pos[0])
+        odom_msg.pose.pose.position.y = float(pos[1])
+        odom_msg.pose.pose.position.z = float(pos[2])
+
+        odom_msg.pose.pose.orientation.w = float(quat[0])
+        odom_msg.pose.pose.orientation.x = float(quat[1])
+        odom_msg.pose.pose.orientation.y = float(quat[2])
+        odom_msg.pose.pose.orientation.z = float(quat[3])
+
+        odom_msg.twist.twist.linear.x = float(lin_vel[0])
+        odom_msg.twist.twist.linear.y = float(lin_vel[1])
+        odom_msg.twist.twist.linear.z = float(lin_vel[2])
+
+        odom_msg.twist.twist.angular.x = float(ang_vel[0])
+        odom_msg.twist.twist.angular.y = float(ang_vel[1])
+        odom_msg.twist.twist.angular.z = float(ang_vel[2])
+
+        self.ros_odom_pub.publish(odom_msg)
+
     def _setup_scene(self):
         self._robot = Articulation(self.cfg.robot)
         self._platform = Articulation(self.cfg.platform)
@@ -245,6 +300,9 @@ class CrazyflieEnv(DirectRLEnv):
             dim=-1,
         )
         observations = {"policy": obs}
+        if rclpy.ok():
+            self._publish_ros_data()
+            rclpy.spin_once(self.ros_node, timeout_sec=0)
         return observations
 
     def _get_rewards(self) -> torch.Tensor:
