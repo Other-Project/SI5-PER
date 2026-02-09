@@ -32,6 +32,6 @@ sudo apt upgrade -y
 
 # Install packages
 sudo apt install gz-harmonic webots \
-    ros-jazzy-desktop ros-jazzy-ros-gz \
+    ros-jazzy-desktop ros-jazzy-ros-gz ros-jazzy-webots-ros2 \
     libboost-program-options-dev libusb-1.0-0-dev python3-colcon-common-extensions \
     ros-jazzy-motion-capture-tracking ros-jazzy-tf-transformations ros-jazzy-teleop-twist-keyboard -y
