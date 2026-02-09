@@ -13,7 +13,7 @@ class ControlServices(Node):
         # Declare and retrieve parameters
         self.declare_parameter("robot_prefix", "/crazyflie")
         self.declare_parameter("incoming_twist_topic", "/crazyflie/input_cmd_vel")
-        self.declare_parameter("max_linear", 0.5)
+        self.declare_parameter("max_linear", 0.25)
         self.declare_parameter("max_ang_z_rate", 0.4)
         self.declare_parameter("height_hold_gain", 1.0)
         self.declare_parameter("flying_threshold", 0.1)
