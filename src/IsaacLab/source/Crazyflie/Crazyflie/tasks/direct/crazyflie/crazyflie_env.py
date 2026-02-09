@@ -210,32 +210,43 @@ class CrazyflieEnv(DirectRLEnv):
     def _pre_physics_step(self, actions: torch.Tensor):
         self._actions = actions.clone().clamp(-1.0, 1.0)
 
-        # TODO : only the first drone should apply
-        target_lin_vel_b = self._actions[:, :3] * self.cfg.max_linear_velocity
-        target_ang_vel_z = self._actions[:, 3] * self.cfg.max_angular_velocity_z
+        self._drone_target_lin_vel_b[:] = self._actions[:, :3] * self.cfg.max_linear_velocity
+        self._drone_target_ang_vel_b[:, :2] = 0.0
+        self._drone_target_ang_vel_b[:, 2] = self._actions[:, 3] * self.cfg.max_angular_velocity_z
 
-        self.bridge.publish_command(target_lin_vel_b[0], target_ang_vel_z[0])
+        self.bridge.publish_command(self._drone_target_lin_vel_b[0], self._drone_target_ang_vel_b[0, 2])
 
         rclpy.spin_once(self.bridge, timeout_sec=0.0)
 
         if self.bridge.received_first_msg:
-            root_pos = self._robot.data.root_pos_w.clone()
-            root_pos[0, :] = self.bridge.latest_pos.to(self.device)
+            root_pos_w = self._robot.data.root_pos_w.clone()
+            root_quat_w = self._robot.data.root_quat_w.clone()
+            root_lin_vel_w = self._robot.data.root_lin_vel_w.clone()
+            root_ang_vel_w = self._robot.data.root_ang_vel_w.clone()
 
-            root_quat = self._robot.data.root_quat_w.clone()
-            root_quat[0, :] = self.bridge.latest_quat.to(self.device)
+            root_pos_w[0] = self.bridge.latest_pos.to(self.device)
+            root_quat_w[0] = self.bridge.latest_quat.to(self.device)
+            root_lin_vel_w[0] = self.bridge.latest_lin_vel.to(self.device)
 
-            root_lin_vel = self._robot.data.root_lin_vel_w.clone()
-            root_lin_vel[0, :] = self.bridge.latest_lin_vel.to(self.device)
-
-            self._robot.write_root_pose_to_sim(torch.cat([root_pos, root_quat], dim=-1))
-            self._robot.write_root_velocity_to_sim(torch.cat([root_lin_vel, torch.zeros_like(root_lin_vel)], dim=-1))
-
-        self._drone_target_lin_vel_b[:, :3] = target_lin_vel_b
-        self._drone_target_ang_vel_b[:, 2] = target_ang_vel_z
+            self._robot.write_root_pose_to_sim(torch.cat([root_pos_w, root_quat_w], dim=-1))
+            self._robot.write_root_velocity_to_sim(torch.cat([root_lin_vel_w, root_ang_vel_w], dim=-1))
 
     def _apply_action(self):
         dt = self.sim.cfg.dt * self.cfg.decimation
+
+        drone_target_lin_vel_w = quat_apply(
+            self._robot.data.root_quat_w,
+            self._drone_target_lin_vel_b
+        )
+
+        drone_target_ang_vel_w = quat_apply(
+            self._robot.data.root_quat_w,
+            self._drone_target_ang_vel_b
+        )
+
+        self._robot.write_root_velocity_to_sim(
+            torch.cat([drone_target_lin_vel_w, drone_target_ang_vel_w], dim=-1)
+        )
 
         # Apply platform control
         self._platform.set_joint_velocity_target(
