@@ -110,7 +110,9 @@ class CrazyflieEnvCfg(DirectRLEnvCfg):
     ang_vel_reward_scale = -0.01
     distance_to_goal_reward_scale = 15.0
     tilt_constraint_reward_scale = -5.0
-    unsafe_velocity_reward_scale = -1.0
+    height_penalty_scale = -5.0
+    
+    safe_height = 0.5
 
     # random pose range
     platform_spawn_range_xy = 2.0
@@ -152,7 +154,7 @@ class CrazyflieEnv(DirectRLEnv):
                 "ang_vel",
                 "distance_to_goal",
                 "tilt_constraint",
-                "unsafe_velocity",
+                "height_penalty"
             ]
         }
         # Get specific body indices
@@ -256,15 +258,17 @@ class CrazyflieEnv(DirectRLEnv):
         flatness = grav_b[:, 2].abs()
         tilt_penalty = torch.square(
             torch.clamp(torch.cos(torch.deg2rad_(torch.tensor(self.cfg.tilt_limit_deg))) - flatness, min=0.0))
-        v_xy = torch.linalg.vector_norm(self._robot.data.root_lin_vel_b[:, :2], dim=1)
-        v_z = self._robot.data.root_lin_vel_b[:, 2]
-        unsafe_ratio = torch.relu(v_xy - torch.abs(v_z))
+        root_z = self._robot.data.root_pos_w[:, 2]
+        horizontal_dist = torch.linalg.norm(self._robot.data.root_pos_w[:, :2] - self._desired_pos_w[:, :2], dim=1)
+        height_weight = torch.clamp((horizontal_dist - 0.2) / 0.3, min=0.0, max=1.0)
+        height_violation = torch.clamp(self.cfg.safe_height - root_z, min=0.0)
+        weighted_height_penalty = height_violation * height_weight
         rewards = {
             "lin_vel": lin_vel * self.cfg.lin_vel_reward_scale * self.step_dt,
             "ang_vel": ang_vel * self.cfg.ang_vel_reward_scale * self.step_dt,
             "distance_to_goal": distance_to_goal_mapped * self.cfg.distance_to_goal_reward_scale * self.step_dt,
-            "tilt_constraint": tilt_penalty * self.cfg.tilt_constraint_reward_scale * self.step_dt,
-            "unsafe_velocity": unsafe_ratio * self.cfg.unsafe_velocity_reward_scale * self.step_dt,
+            "tilt_constraint": tilt_penalty * self.cfg.tilt_constraint_reward_scale * self.step_dt, 
+            "height_penalty": weighted_height_penalty * self.cfg.height_penalty_scale * self.step_dt
         }
         reward = torch.sum(torch.stack(list(rewards.values())), dim=0)
         # Logging
