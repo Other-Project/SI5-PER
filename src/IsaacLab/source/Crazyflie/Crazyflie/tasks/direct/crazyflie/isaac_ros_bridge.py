@@ -1,5 +1,5 @@
 ﻿import torch
-from geometry_msgs.msg import Twist
+from geometry_msgs.msg import Twist, Pose
 from nav_msgs.msg import Odometry
 from rclpy.node import Node
 
@@ -9,10 +9,12 @@ class IsaacRosBridge(Node):
     ROS 2 Node to bridge between Isaac and ROS for the Crazyflie environment.
     """
 
-    def __init__(self, topic_cmd="/crazyflie/input_cmd_vel", topic_odom="/crazyflie/odom"):
+    def __init__(self, topic_cmd="/crazyflie/input_cmd_vel", reset_pub="/crazyflie/set_pose",
+                 topic_odom="/crazyflie/odom"):
         super().__init__("isaac_ros_bridge_node")
 
         self.cmd_pub = self.create_publisher(Twist, topic_cmd, 10)
+        self.reset_pub = self.create_publisher(Pose, reset_pub, 10)
 
         self.odom_sub = self.create_subscription(Odometry, topic_odom, self.odom_callback, 10)
 
@@ -53,6 +55,20 @@ class IsaacRosBridge(Node):
         ], dtype=torch.float32)
 
         self.received_first_msg = True
+
+    def publish_reset_pos(self, pos, quat):
+        msg = Pose()
+        msg.position.x = float(pos[0])
+        msg.position.y = float(pos[1])
+        msg.position.z = float(pos[2])
+
+        msg.orientation.w = float(quat[0])
+        msg.orientation.x = float(quat[1])
+        msg.orientation.y = float(quat[2])
+        msg.orientation.z = float(quat[3])
+
+        self.reset_pub.publish(msg)
+        print(f"[ROS Bridge] Published reset position: ({pos[0]:.2f}, {pos[1]:.2f}, {pos[2]:.2f})")
 
     def publish_command(self, lin_vel, ang_vel_z):
         msg = Twist()

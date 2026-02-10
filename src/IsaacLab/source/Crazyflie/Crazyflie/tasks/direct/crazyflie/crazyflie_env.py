@@ -185,6 +185,7 @@ class CrazyflieEnv(DirectRLEnv):
 
         self.bridge = IsaacRosBridge(
             topic_cmd="/crazyflie/input_cmd_vel",
+            reset_pub="/crazyflie/set_pose",
             topic_odom="/crazyflie/odom"
         )
         print("[INFO] Bridge ROS 2 initialized")
@@ -380,6 +381,14 @@ class CrazyflieEnv(DirectRLEnv):
         self._robot.write_root_pose_to_sim(default_root_state[:, :7], env_ids)
         self._robot.write_root_velocity_to_sim(default_root_state[:, 7:], env_ids)
         self._robot.write_joint_state_to_sim(joint_pos, joint_vel, None, env_ids)
+
+        if (env_ids == 0).any():
+            idx_in_tensor = (env_ids == 0).nonzero(as_tuple=False).item()
+
+            new_pos = default_root_state[idx_in_tensor, :3]
+            new_quat = default_root_state[idx_in_tensor, 3:7]  # w, x, y, z
+
+            self.bridge.publish_reset_pos(new_pos, new_quat)
 
     def _set_debug_vis_impl(self, debug_vis: bool):
         # create markers if necessary for the first time

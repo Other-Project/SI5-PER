@@ -113,6 +113,25 @@ def generate_launch_description():
         )
     )
 
+    # Service to reset drone pos
+    ld.add_action(
+        Node(
+            package="ros_gz_bridge",
+            executable="parameter_bridge",
+            name="ros_gz_bridge_service",
+            arguments=["/world/empty/set_pose@ros_gz_interfaces/srv/SetEntityPose"],
+            output="screen",
+        )
+    )
+
+    ld.add_action(
+        Node(
+            package="crazyflie_reset",
+            executable="reset_pos",
+            output="screen",
+        )
+    )
+
     # ld.add_action(
     #     Node(
     #         package="rviz2",

@@ -91,7 +91,7 @@ class ControlServices(Node):
         return response
 
     def cmd_vel_callback(self, msg):
-        print("Received teleop cmd: " + str(msg))
+        self.get_logger().debug(f"Received teleop cmd: {msg}")
         self.teleop_cmd = msg
 
 
