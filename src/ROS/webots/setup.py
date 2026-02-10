@@ -13,7 +13,15 @@ data_files.append(
         ],
     )
 )
-data_files.append(("share/" + package_name + "/resource", ["resource/crazyflie_webots.urdf"]))
+data_files.append(
+    (
+        "share/" + package_name + "/resource",
+        [
+            "resource/crazyflie_webots.urdf",
+            "resource/ab2_webots.urdf",
+        ],
+    )
+)
 data_files.append(("share/" + package_name + "/proto", ["proto/Alphabot2.proto"]))
 data_files.append(
     (

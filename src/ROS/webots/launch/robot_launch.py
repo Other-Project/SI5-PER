@@ -42,15 +42,15 @@ def generate_launch_description():
         parameters=[
             {"robot_description": crazyflie_description_path},
         ],
-        remappings=[("/crazyflie/cmd_vel", "/cmd_vel"), ("/crazyflie/odom", "/odom")],
+        remappings=[("/cmd_vel", "/crazyflie/cmd_vel"), ("/odom", "/crazyflie/odom")],
         respawn=True,
     )
 
-    platform_description_path = os.path.join(get_package_share_directory("ab2_description"), "urdf", "ab2.urdf")
+    platform_description_path = os.path.join(package_dir, "resource", "ab2_webots.urdf")
     platform_driver = WebotsController(
         robot_name="Alphabot2",
         parameters=[{"robot_description": platform_description_path}],
-        remappings=[("/alphabot2/cmd_vel", "/cmd_vel"), ("/alphabot2/odom", "/odom")],
+        remappings=[("/cmd_vel", "/alphabot2/cmd_vel"), ("/odom", "/alphabot2/odom")],
         respawn=True,
     )
 
