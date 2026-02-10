@@ -16,7 +16,7 @@ def generate_launch_description():
     # Start Webots
     ld.add_action(
         IncludeLaunchDescription(
-            PythonLaunchDescriptionSource(os.path.join(get_package_share_directory("webots_ros2_crazyflie"), "launch", "robot_launch.py")),
+            PythonLaunchDescriptionSource(os.path.join(get_package_share_directory("webots"), "launch", "robot_launch.py")),
         )
     )
 
