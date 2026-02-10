@@ -125,21 +125,27 @@ class CrazyflieEnvCfg(DirectRLEnvCfg):
     lin_vel_reward_scale = -0.05
     ang_vel_reward_scale = -0.01
     distance_to_goal_reward_scale = 15.0
-    tilt_constraint_reward_scale = -5.0
+    tilt_constraint_penalty_scale = -5.0
     height_penalty_scale = -5.0
+    landing_reward_scale = 500.0
+    landing_penalty_scale = -10.0
     
-    safe_height = 0.5
+    landing_height_threshold = 0.15
 
     # random pose range
     platform_spawn_range_xy = 2.0
     platform_spawn_z = 0.0
-    drone_min_height = 0.0
-    drone_max_height = 0.6
+    drone_min_height = 0.6
+    drone_max_height = 3.0
 
     # Alpha bot movement parameters
-    platform_max_linear_velocity = 0.25  # m/s
+    platform_max_linear_velocity = 0.15  # m/s
     platform_max_angular_velocity = 1.0  # rad/s
 
+    # Curriculum learning parameters
+    curriculum_length_steps = 3600
+    curriculum_easy_height = 0.2
+    curriculum_hard_height = 3.0
 
 class CrazyflieEnv(DirectRLEnv):
     cfg: CrazyflieEnvCfg
@@ -170,7 +176,8 @@ class CrazyflieEnv(DirectRLEnv):
                 "ang_vel",
                 "distance_to_goal",
                 "tilt_constraint",
-                "height_penalty"
+                "height_penalty",
+                "landing_reward"
             ]
         }
         # Get specific body indices
@@ -282,6 +289,10 @@ class CrazyflieEnv(DirectRLEnv):
         forces_w = quat_apply(root_quat, forces)
         torques_w = quat_apply(root_quat, torques)
 
+        is_landing = self._robot.data.root_pos_w[:, 2] < self.cfg.landing_height_threshold
+        forces_w[is_landing] = 0.0
+        torques_w[is_landing] = 0.0
+
         self._robot.set_external_force_and_torque(
             forces=forces_w.unsqueeze(1),
             torques=torques_w.unsqueeze(1),
@@ -316,35 +327,51 @@ class CrazyflieEnv(DirectRLEnv):
         return observations
 
     def _get_rewards(self) -> torch.Tensor:
-        lin_vel = torch.sum(torch.square(self._robot.data.root_lin_vel_b), dim=1)
-        ang_vel = torch.sum(torch.square(self._robot.data.root_ang_vel_b), dim=1)
-        distance_to_goal = torch.linalg.norm(self._desired_pos_w - self._robot.data.root_pos_w, dim=1)
-        distance_to_goal_mapped = 1 - torch.tanh(distance_to_goal / 0.8)
+        target_pos_w = self._platform.data.root_pos_w.clone()
+        
+        root_pos_w = self._robot.data.root_pos_w
+        root_lin_vel_b = self._robot.data.root_lin_vel_b
+        root_ang_vel_b = self._robot.data.root_ang_vel_b
+        
+        lin_vel = torch.sum(torch.square(root_lin_vel_b), dim=1)
+        ang_vel = torch.sum(torch.square(root_ang_vel_b), dim=1)
+        
+        distance_to_goal = torch.linalg.norm(target_pos_w - root_pos_w, dim=1)
+        
+        distance_to_goal_mapped = 1.0 / (1.0 + torch.square(distance_to_goal / 0.5))
+
         grav_b = self._robot.data.projected_gravity_b
         flatness = grav_b[:, 2].abs()
         tilt_penalty = torch.square(
             torch.clamp(torch.cos(torch.deg2rad_(torch.tensor(self.cfg.tilt_limit_deg))) - flatness, min=0.0))
-        root_z = self._robot.data.root_pos_w[:, 2]
-        horizontal_dist = torch.linalg.norm(self._robot.data.root_pos_w[:, :2] - self._desired_pos_w[:, :2], dim=1)
-        height_weight = torch.clamp((horizontal_dist - 0.2) / 0.3, min=0.0, max=1.0)
-        height_violation = torch.clamp(self.cfg.safe_height - root_z, min=0.0)
-        weighted_height_penalty = height_violation * height_weight
+
+        horizontal_dist = torch.linalg.norm(root_pos_w[:, :2] - target_pos_w[:, :2], dim=1)
+        
+        on_top_of_target = horizontal_dist < 0.2
+        height_penalty = root_pos_w[:, 2] * on_top_of_target.float()
+
+        hit_ground = root_pos_w[:, 2] < 0.05
+        is_aligned = horizontal_dist < 0.10
+        
+        landing_reward = (hit_ground & is_aligned).float()
+
         rewards = {
             "lin_vel": lin_vel * self.cfg.lin_vel_reward_scale * self.step_dt,
             "ang_vel": ang_vel * self.cfg.ang_vel_reward_scale * self.step_dt,
             "distance_to_goal": distance_to_goal_mapped * self.cfg.distance_to_goal_reward_scale * self.step_dt,
-            "tilt_constraint": tilt_penalty * self.cfg.tilt_constraint_reward_scale * self.step_dt, 
-            "height_penalty": weighted_height_penalty * self.cfg.height_penalty_scale * self.step_dt
+            "tilt_constraint": tilt_penalty * self.cfg.tilt_constraint_penalty_scale * self.step_dt, 
+            "height_penalty": height_penalty * self.cfg.height_penalty_scale * self.step_dt,
+            "landing_reward": landing_reward * self.cfg.landing_reward_scale * self.step_dt,
         }
         reward = torch.sum(torch.stack(list(rewards.values())), dim=0)
         # Logging
         for key, value in rewards.items():
-            self._episode_sums[key] += value
+            self._episode_sums[key] += value 
         return reward
 
     def _get_dones(self) -> tuple[torch.Tensor, torch.Tensor]:
         time_out = self.episode_length_buf >= self.max_episode_length - 1
-        died_pos = torch.logical_or(self._robot.data.root_pos_w[:, 2] < 0, self._robot.data.root_pos_w[:, 2] > 2.0)
+        died_pos = torch.logical_or(self._robot.data.root_pos_w[:, 2] <= 0.0, self._robot.data.root_pos_w[:, 2] > 4.0)
 
         grav_b = self._robot.data.projected_gravity_b
         died_tilt = grav_b[:, 2].abs() < 0.5
@@ -392,11 +419,16 @@ class CrazyflieEnv(DirectRLEnv):
         self._platform.write_root_pose_to_sim(default_root_state_platform[:, :7], env_ids)
         self._platform_wheel_vel[env_ids] = 0.0
 
-        # Set random linear velocity for the platform
+        curr_factor = min(self.common_step_counter / self.cfg.curriculum_length_steps, 1.0)
+        
+        vel_scale = max(0.0, (curr_factor - 0.5) * 2.0)
+
         random_lin_vel = torch.zeros(num_envs_to_reset, 2, device=self.device).uniform_(
             -self.cfg.platform_max_linear_velocity,
             self.cfg.platform_max_linear_velocity
         )
+        self._platform_target_lin_vel[env_ids, :2] = random_lin_vel * vel_scale
+        
         self._platform_target_lin_vel[env_ids, 0] = random_lin_vel[:, 0]
         self._platform_target_lin_vel[env_ids, 1] = random_lin_vel[:, 1]
         self._platform_target_lin_vel[env_ids, 2] = 0.0
@@ -412,13 +444,34 @@ class CrazyflieEnv(DirectRLEnv):
         self._drone_target_ang_vel_b[env_ids] = 0.0
 
         # Sample new commands
-        self._desired_pos_w[env_ids, :] = self._platform.data.root_pos_w[env_ids, :]
+        self._desired_pos_w[env_ids, :] = random_pos
         # Reset robot state
         joint_pos = self._robot.data.default_joint_pos[env_ids]
         joint_vel = self._robot.data.default_joint_vel[env_ids]
-        default_root_state = self._robot.data.default_root_state[env_ids]
-        default_root_state[:, 2].uniform_(self.cfg.drone_min_height, self.cfg.drone_max_height)
-        default_root_state[:, :3] += self._terrain.env_origins[env_ids]
+        
+        default_root_state = self._robot.data.default_root_state[env_ids].clone()
+        
+        max_steps = self.cfg.curriculum_length_steps
+        curriculum_factor = min(self.common_step_counter / max_steps, 1.0)
+        
+        min_z = 0.15
+        max_z_target = self.cfg.curriculum_hard_height
+        current_max_z = 0.2 + curriculum_factor * (max_z_target - 0.2)
+        
+        default_root_state[:, 2].uniform_(min_z, current_max_z)
+    
+        platform_new_pos_w = random_pos 
+        
+        easy_radius = 0.0
+        hard_radius = self.cfg.platform_spawn_range_xy
+        current_radius = easy_radius + curriculum_factor * (hard_radius - easy_radius)
+        
+        noise_xy = torch.zeros(len(env_ids), 2, device=self.device)
+        noise_xy.uniform_(-current_radius, current_radius)
+        
+        default_root_state[:, 0] = platform_new_pos_w[:, 0] + noise_xy[:, 0]
+        default_root_state[:, 1] = platform_new_pos_w[:, 1] + noise_xy[:, 1]
+        
         self._robot.write_root_pose_to_sim(default_root_state[:, :7], env_ids)
         self._robot.write_root_velocity_to_sim(default_root_state[:, 7:], env_ids)
         self._robot.write_joint_state_to_sim(joint_pos, joint_vel, None, env_ids)
