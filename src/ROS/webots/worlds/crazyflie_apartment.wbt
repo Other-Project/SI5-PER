@@ -33,6 +33,7 @@ EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2023b/project
 EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2023b/projects/objects/paintings/protos/PortraitPainting.proto"
 EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2023b/projects/objects/paintings/protos/LandscapePainting.proto"
 EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2023b/projects/robots/bitcraze/crazyflie/protos/Crazyflie.proto"
+EXTERNPROTO "../proto/Alphabot2.proto"
 
 WorldInfo {
   info [
@@ -529,4 +530,7 @@ LandscapePainting {
 Crazyflie {
   translation -5 -2 0.015
   controller "<extern>"
+}
+Alphabot2 {
+  translation -5 -2 0
 }

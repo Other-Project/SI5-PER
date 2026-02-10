@@ -36,12 +36,21 @@ def generate_launch_description():
 
     webots = WebotsLauncher(world=PathJoinSubstitution([package_dir, "worlds", world]), ros2_supervisor=True)
 
-    robot_description_path = os.path.join(package_dir, "resource", "crazyflie_webots.urdf")
+    crazyflie_description_path = os.path.join(package_dir, "resource", "crazyflie_webots.urdf")
     crazyflie_driver = WebotsController(
         robot_name="Crazyflie",
         parameters=[
-            {"robot_description": robot_description_path},
+            {"robot_description": crazyflie_description_path},
         ],
+        remappings=[("/crazyflie/cmd_vel", "/cmd_vel"), ("/crazyflie/odom", "/odom")],
+        respawn=True,
+    )
+
+    platform_description_path = os.path.join(get_package_share_directory("ab2_description"), "urdf", "ab2.urdf")
+    platform_driver = WebotsController(
+        robot_name="Alphabot2",
+        parameters=[{"robot_description": platform_description_path}],
+        remappings=[("/alphabot2/cmd_vel", "/cmd_vel"), ("/alphabot2/odom", "/odom")],
         respawn=True,
     )
 
@@ -55,6 +64,7 @@ def generate_launch_description():
             webots,
             webots._supervisor,
             crazyflie_driver,
+            platform_driver,
             # This action will kill all nodes once the Webots simulation has exited
             launch.actions.RegisterEventHandler(
                 event_handler=launch.event_handlers.OnProcessExit(
