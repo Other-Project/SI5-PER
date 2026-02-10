@@ -404,13 +404,11 @@ class CrazyflieEnv(DirectRLEnv):
         num_envs_to_reset = len(env_ids)
 
         # Reset platform position
-        random_xy = torch.zeros(num_envs_to_reset, 2, device=self.device).uniform_(
-            -self.cfg.platform_spawn_range_xy,
-            self.cfg.platform_spawn_range_xy
-        )
+        random_xy = torch.zeros(num_envs_to_reset, 2, device=self.device)
         random_z = torch.full((num_envs_to_reset, 1), self.cfg.platform_spawn_z, device=self.device)
         random_pos = torch.cat([random_xy, random_z], dim=-1)
         random_pos += self._terrain.env_origins[env_ids]
+        
         default_root_state_platform = self._platform.data.default_root_state[env_ids]
         default_root_state_platform[:, :3] = random_pos
         random_yaw = torch.rand(num_envs_to_reset, device=self.device) * 3.14159
