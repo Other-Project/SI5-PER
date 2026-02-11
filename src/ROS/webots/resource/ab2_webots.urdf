@@ -1,0 +1,17 @@
+<?xml version="1.0" ?>
+<robot name="Alphabot2 Webots">
+    <webots>
+        <device reference="gps" type="GPS">
+            <ros>
+                <enabled>true</enabled>
+                <alwaysOn>true</alwaysOn>
+            </ros>
+        </device>
+        <device reference="camera" type="Camera">
+            <ros>
+                <topicName>/camera</topicName>
+            </ros>
+        </device>
+        <plugin type="webots.alphabot2_driver.Alphabot2Driver" />
+    </webots>
+</robot>

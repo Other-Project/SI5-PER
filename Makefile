@@ -20,6 +20,12 @@ sim: build
 	. .out/ros_install/setup.sh && \
 		ros2 launch crazyflie_launch simulation.launch.py
 
+sim_webots: build
+	export PYTHONPATH='src/ROS/.venv/lib/python3.12/site-packages' && \
+	. src/ROS/.venv/bin/activate && \
+	. .out/ros_install/setup.sh && \
+		ros2 launch crazyflie_launch simulation_webots.launch.py
+
 sim_carto: build
 	export PYTHONPATH='src/ROS/.venv/lib/python3.12/site-packages' && \
 	. src/ROS/.venv/bin/activate && \

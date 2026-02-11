@@ -1,0 +1,147 @@
+#VRML_SIM R2025a utf8
+# license: Apache License 2.0
+# license url: http://www.apache.org/licenses/LICENSE-2.0
+# This is a proto file for Webots for the Alphabot2
+# Extracted from: Alphabot2/ab2_description/urdf/ab2.urdf
+
+PROTO Alphabot2 [
+  field  SFVec3f     translation     0 0 0
+  field  SFRotation  rotation        0 0 1 0
+  field  SFString    name            "Alphabot2"  # Is `Robot.name`.
+  field  SFString    controller      "void"       # Is `Robot.controller`.
+  field  MFString    controllerArgs  []           # Is `Robot.controllerArgs`.
+  field  SFString    customData      ""           # Is `Robot.customData`.
+  field  SFBool      supervisor      FALSE        # Is `Robot.supervisor`.
+  field  SFBool      synchronization TRUE         # Is `Robot.synchronization`.
+  field  SFBool      selfCollision   FALSE        # Is `Robot.selfCollision`.
+  field  MFNode      toolSlot        []           # Extend the robot with new nodes at the end of the arm.
+]
+{
+  Robot {
+    translation IS translation
+    rotation IS rotation
+    controller IS controller
+    controllerArgs IS controllerArgs
+    customData IS customData
+    supervisor IS supervisor
+    synchronization IS synchronization
+    selfCollision IS selfCollision
+    children [
+      Solid {
+        rotation 0.000000 0.000000 -1.000000 1.570800
+        children [
+          DEF body_visual CadShape {
+            url "../meshes/body.dae"
+          }
+          HingeJoint {
+            jointParameters HingeJointParameters {
+              anchor -0.044000 0.000000 0.000000
+            }
+            device [
+              RotationalMotor {
+                name "wheel_left_joint"
+                maxTorque 10000
+              }
+              PositionSensor {
+                name "wheel_left_joint_sensor"
+              }
+            ]
+            endPoint Solid {
+              translation -0.044000 0.000000 0.000000
+              children [
+                DEF wheel_visual CadShape {
+                  url "../meshes/wheel.dae"
+                }
+              ]
+              name "wheel_left_link"
+              boundingObject Cylinder {
+                radius 0.021
+                height 0.019
+              }
+              physics Physics {
+                density -1
+                mass 0.030000
+                centerOfMass [ -0.000196 -0.000181 -0.000075 ]
+                inertiaMatrix [
+                  6.440000e-06 4.070000e-06 4.070000e-06
+                  -0.000000e+00 -0.000000e+00 -0.000000e+00
+                ]
+              }
+            }
+          }
+          HingeJoint {
+            jointParameters HingeJointParameters {
+              anchor 0.044000 0.000000 0.000000
+            }
+            device [
+              RotationalMotor {
+                name "wheel_right_joint"
+                maxTorque 10000
+              }
+              PositionSensor {
+                name "wheel_right_joint_sensor"
+              }
+            ]
+            endPoint Solid {
+              translation 0.044000 0.000000 0.000000
+              children [
+                Pose {
+                  rotation 0.000000 1.000000 0.000000 3.140000
+                  children [
+                    USE wheel_visual
+                  ]
+                }
+              ]
+              name "wheel_right_link"
+              boundingObject Cylinder {
+                radius 0.021
+                height 0.019
+              }
+              physics Physics {
+                density -1
+                mass 0.030000
+                centerOfMass [ -0.000196 -0.000181 -0.000075 ]
+                inertiaMatrix [
+                  6.440000e-06 4.070000e-06 4.070000e-06
+                  -0.000000e+00 -0.000000e+00 -0.000000e+00
+                ]
+              }
+            }
+          }
+          Solid {
+            translation 0.000000 -0.050000 -0.016000
+            name "caster_back_link"
+            boundingObject Box {
+               size 0.010000 0.010000 0.010000
+            }
+            physics Physics {
+            }
+          }
+          Solid {
+            translation 0.000000 0.050000 -0.016000
+            name "caster_front_link"
+            boundingObject Box {
+               size 0.010000 0.010000 0.010000
+            }
+            physics Physics {
+            }
+          }
+        ]
+        name "base_link"
+        boundingObject Box {
+           size 0.140000 0.140000 0.065000
+        }
+        physics Physics {
+          density -1
+          mass 0.540000
+          centerOfMass [ 0.000000 0.000000 0.020000 ]
+          inertiaMatrix [
+            8.016600e-04 7.679600e-04 1.175960e-03
+            0.000000e+00 -1.900000e-07 2.000000e-06
+          ]
+        }
+      }
+    ]
+    name IS name
+  }
+}

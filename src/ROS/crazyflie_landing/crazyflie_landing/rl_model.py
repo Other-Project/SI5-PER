@@ -138,20 +138,15 @@ class RLModelNode(LifecycleNode):
         # Format for ONNX (Batch Size of 1)
         # Shape: [1, number_of_observations]
         input_tensor = obs.reshape(1, -1).astype(np.float32)
-        self.get_logger().info(f"Input: {np.array_str(input_tensor, precision=3, suppress_small=True)}")
+        self.get_logger().debug(f"Input: {np.array_str(input_tensor, precision=3, suppress_small=True)}")
 
         # Inference (Model execution)
         outputs = self.ort_session.run([self.output_name], {self.input_name: input_tensor})[0][0]
-        self.get_logger().info(f"Outputs: {np.array_str(outputs, precision=3, suppress_small=True)}")
+        self.get_logger().debug(f"Outputs: {np.array_str(outputs, precision=3, suppress_small=True)}")
 
         velocity_x, velocity_y, velocity_z, angular_velocity_z = outputs.clip(-1.0, 1.0)
-        factor = 0.2
-        max_val = max(abs(velocity_z) * factor, factor)
-        velocity_x = np.clip(velocity_x, -max_val, max_val)
-        velocity_y = np.clip(velocity_y, -max_val, max_val)
-        angular_velocity_z = np.clip(angular_velocity_z, -max_val, max_val)
 
-        self.get_logger().info(
+        self.get_logger().debug(
             f"Commanded velocities -> vx: {velocity_x:.3f}, vy: {velocity_y:.3f}, vz: {velocity_z:.3f}, wz: {angular_velocity_z:.3f}"
         )
 
