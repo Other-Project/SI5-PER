@@ -128,20 +128,19 @@ class CrazyflieEnvCfg(DirectRLEnvCfg):
     landing_reward_scale = 500.0
     landing_penalty_scale = -10.0
     
-    landing_height_threshold = 0.15
+    landing_height_threshold = 0.05 
+    landing_radius = 0.2 
 
     # random pose range
     platform_spawn_range_xy = 2.0
     platform_spawn_z = 0.0
-    drone_min_height = 0.6
-    drone_max_height = 3.0
 
     # Alpha bot movement parameters
     platform_max_linear_velocity = 0.15  # m/s
     platform_max_angular_velocity = 1.0  # rad/s
 
     # Curriculum learning parameters
-    curriculum_length_steps = 3600
+    curriculum_length_steps = 2400
     curriculum_easy_height = 0.2
     curriculum_hard_height = 3.0
 
@@ -281,10 +280,6 @@ class CrazyflieEnv(DirectRLEnv):
         forces_w = quat_apply(root_quat, forces)
         torques_w = quat_apply(root_quat, torques)
 
-        is_landing = self._robot.data.root_pos_w[:, 2] < self.cfg.landing_height_threshold
-        forces_w[is_landing] = 0.0
-        torques_w[is_landing] = 0.0
-
         self._robot.set_external_force_and_torque(
             forces=forces_w.unsqueeze(1),
             torques=torques_w.unsqueeze(1),
@@ -332,15 +327,14 @@ class CrazyflieEnv(DirectRLEnv):
             torch.clamp(torch.cos(torch.deg2rad_(torch.tensor(self.cfg.tilt_limit_deg))) - flatness, min=0.0))
 
         horizontal_dist = torch.linalg.norm(root_pos_w[:, :2] - target_pos_w[:, :2], dim=1)
+        on_top_of_target = horizontal_dist < self.cfg.landing_radius
+        height_error = root_pos_w[:, 2] - target_pos_w[:, 2]
+        height_penalty = height_error * on_top_of_target.float()
         
-        on_top_of_target = horizontal_dist < 0.2
-        height_penalty = root_pos_w[:, 2] * on_top_of_target.float()
-
-        hit_ground = root_pos_w[:, 2] < 0.05
-        is_aligned = horizontal_dist < 0.10
+        is_at_landing_height = torch.abs(height_error) < self.cfg.landing_height_threshold
+        is_aligned = horizontal_dist < (self.cfg.landing_radius / 2.0)
+        landing_reward = (is_at_landing_height & is_aligned).float()
         
-        landing_reward = (hit_ground & is_aligned).float()
-
         rewards = {
             "lin_vel": lin_vel * self.cfg.lin_vel_reward_scale * self.step_dt,
             "ang_vel": ang_vel * self.cfg.ang_vel_reward_scale * self.step_dt,
@@ -357,7 +351,7 @@ class CrazyflieEnv(DirectRLEnv):
 
     def _get_dones(self) -> tuple[torch.Tensor, torch.Tensor]:
         time_out = self.episode_length_buf >= self.max_episode_length - 1
-        died_pos = torch.logical_or(self._robot.data.root_pos_w[:, 2] <= 0.0, self._robot.data.root_pos_w[:, 2] > 4.0)
+        died_pos = torch.logical_or(self._robot.data.root_pos_w[:, 2] < 0.05, self._robot.data.root_pos_w[:, 2] > 4.0)
 
         grav_b = self._robot.data.projected_gravity_b
         died_tilt = grav_b[:, 2].abs() < 0.5
@@ -439,11 +433,14 @@ class CrazyflieEnv(DirectRLEnv):
         max_steps = self.cfg.curriculum_length_steps
         curriculum_factor = min(self.common_step_counter / max_steps, 1.0)
         
-        min_z = 0.15
-        max_z_target = self.cfg.curriculum_hard_height
-        current_max_z = 0.2 + curriculum_factor * (max_z_target - 0.2)
+        platform_z_location = self.cfg.platform_spawn_z 
         
-        default_root_state[:, 2].uniform_(min_z, current_max_z)
+        min_spawn_z = platform_z_location + self.cfg.curriculum_easy_height
+        
+        max_spawn_z_offset = self.cfg.curriculum_hard_height
+        current_max_z = min_spawn_z + curriculum_factor * (max_spawn_z_offset - self.cfg.curriculum_easy_height)
+        
+        default_root_state[:, 2].uniform_(min_spawn_z, current_max_z)
     
         platform_new_pos_w = random_pos 
         
