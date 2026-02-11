@@ -18,14 +18,12 @@ from isaaclab.sim import SimulationCfg
 from isaaclab.terrains import TerrainImporterCfg
 from isaaclab.utils import configclass
 from isaaclab.utils.math import subtract_frame_transforms, quat_apply, quat_apply_inverse
-from isaaclab_assets import ANYDRIVE_3_SIMPLE_ACTUATOR_CFG  # isort: skip
 ##
 # Pre-defined configs
 ##
 from isaaclab_assets import CRAZYFLIE_CFG  # isort: skip
 
-from ....assets import ALPHABOT_CFG, ALPHABOT_JOINTS_NAMES, ACTUATORS_LEFT_WHEEL, ACTUATORS_RIGHT_WHEEL
-
+from ....assets import JACKAL_CFG, JACKAL_JOINTS_NAMES, JACKAL_ACTUATORS_LEFT_WHEEL, JACKAL_ACTUATORS_RIGHT_WHEEL
 
 class CrazyflieEnvWindow(BaseEnvWindow):
     """Window manager for the Quadcopter environment."""
@@ -117,7 +115,7 @@ class CrazyflieEnvCfg(DirectRLEnvCfg):
     max_torque = 0.006
 
     # alpha bot
-    platform: ArticulationCfg = ALPHABOT_CFG.replace(
+    platform: ArticulationCfg = JACKAL_CFG.replace(
         prim_path="/World/envs/env_.*/Platform"
     )
 
@@ -159,7 +157,7 @@ class CrazyflieEnv(DirectRLEnv):
         self._drone_target_ang_vel_b = torch.zeros(self.num_envs, 3, device=self.device)
 
         # Platform wheel velocities for differential drive
-        self._platform_wheel_vel = None
+        self._platform_wheel_vel = self._platform_wheel_vel = torch.zeros(self.num_envs, device=self.device)
         self._platform_joint_indices = None
 
         # Platform target velocities (linear and angular)
@@ -188,15 +186,9 @@ class CrazyflieEnv(DirectRLEnv):
 
         # Initialize platform joint indices and velocities
         wheel_joint_names = [
-            ALPHABOT_JOINTS_NAMES[ACTUATORS_LEFT_WHEEL],
-            ALPHABOT_JOINTS_NAMES[ACTUATORS_RIGHT_WHEEL]
+            JACKAL_JOINTS_NAMES[JACKAL_ACTUATORS_LEFT_WHEEL],
+            JACKAL_JOINTS_NAMES[JACKAL_ACTUATORS_RIGHT_WHEEL]
         ]
-        self._platform_joint_indices = self._platform.find_joints(wheel_joint_names)[0]
-        self._platform_wheel_vel = torch.zeros(
-            self.num_envs,
-            len(self._platform_joint_indices),
-            device=self.device
-        )
 
         # add handle for debug visualization (this is set to a valid handle inside set_debug_vis)
         self.set_debug_vis(self.cfg.debug_vis)
@@ -206,7 +198,7 @@ class CrazyflieEnv(DirectRLEnv):
         self._platform = Articulation(self.cfg.platform)
         self.scene.articulations["robot"] = self._robot
         self.scene.articulations["platform"] = self._platform
-
+        self.landing_target_view = self._platform
         self.cfg.terrain.num_envs = self.scene.cfg.num_envs
         self.cfg.terrain.env_spacing = self.scene.cfg.env_spacing
         self._terrain = self.cfg.terrain.class_type(self.cfg.terrain)
@@ -300,18 +292,12 @@ class CrazyflieEnv(DirectRLEnv):
         )
 
         # Apply platform control
-        self._platform.set_joint_velocity_target(
-            self._platform_wheel_vel,
-            joint_ids=self._platform_joint_indices
-        )
-        # Change the platform position based on its velocity
-        new_platform_pos = self._platform.data.root_pos_w + self._platform_target_lin_vel * dt
-        new_platform_quat = self._platform.data.root_quat_w
-        self._platform.write_root_pose_to_sim(torch.cat([new_platform_pos, new_platform_quat], dim=-1))
+        root_vel = torch.zeros(self.num_envs, 6, device=self.device)
+        root_vel[:, :3] = self._platform_target_lin_vel
+        self._platform.write_root_velocity_to_sim(root_vel)
 
     def _get_observations(self) -> dict:
-        self._desired_pos_w = self._platform.data.root_pos_w.clone()
-        self._desired_pos_w[:, 2] += 0.1
+        self._desired_pos_w = self.landing_target_view.data.root_pos_w + torch.tensor([0.0, 0.0, 0.15], device=self.device)
         desired_pos_b, _ = subtract_frame_transforms(
             self._robot.data.root_pos_w, self._robot.data.root_quat_w, self._desired_pos_w
         )
@@ -327,7 +313,7 @@ class CrazyflieEnv(DirectRLEnv):
         return observations
 
     def _get_rewards(self) -> torch.Tensor:
-        target_pos_w = self._platform.data.root_pos_w.clone()
+        target_pos_w = self._desired_pos_w.clone()
         
         root_pos_w = self._robot.data.root_pos_w
         root_lin_vel_b = self._robot.data.root_lin_vel_b
@@ -415,6 +401,7 @@ class CrazyflieEnv(DirectRLEnv):
         default_root_state_platform[:, 3] = torch.cos(random_yaw)  # w
         default_root_state_platform[:, 6] = torch.sin(random_yaw)  # z
         self._platform.write_root_pose_to_sim(default_root_state_platform[:, :7], env_ids)
+        self._platform.write_root_velocity_to_sim(torch.zeros(num_envs_to_reset, 6, device=self.device), env_ids)
         self._platform_wheel_vel[env_ids] = 0.0
 
         curr_factor = min(self.common_step_counter / self.cfg.curriculum_length_steps, 1.0)
