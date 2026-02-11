@@ -67,10 +67,22 @@ def main():
     print(f"  Min Distance Error:   {np.min(distances):.4f} m")
     print(f"  Std Deviation:        {np.std(distances):.4f} m")
     print(f"{'='*60}")
-    print(f"\n next step :")
-    print(f"   1. Record a bag in the isaacsim simulator")
+    
+    output_file = "../.out/metrics/gazebo_trajectory.npz"
+    np.savez(output_file,
+             drone_positions=np_drone_positions,
+             platform_positions=np_platform_positions,
+             target_positions=target_positions,
+             distances=distances)
+    print(f"\n Trajectory data saved to: {output_file}")
+    print(f"  - Drone positions: {np_drone_positions.shape}")
+    print(f"  - Platform positions: {np_platform_positions.shape}")
+    print(f"  - Target positions: {target_positions.shape}")
+    
+    print(f"   1. Record a bag in the others simulator")
     print(f"   2. Relaunch this script with the new bag")
     print(f"   3. Compare the Mean Distance Error !")
+    print(f"   4. Use saved trajectories for 3D visualization")
 
         
 if __name__ == "__main__":
