@@ -54,6 +54,7 @@ class CrazyflieEnvCfg(DirectRLEnvCfg):
     observation_space = 10
     state_space = 0
     debug_vis = True
+    test = False
 
     ui_window_class_type = CrazyflieEnvWindow
 
@@ -132,11 +133,11 @@ class CrazyflieEnvCfg(DirectRLEnvCfg):
     landing_radius = 0.2 
 
     # random pose range
-    platform_spawn_range_xy = 2.0
+    platform_spawn_range_xy = 4.0
     platform_spawn_z = 0.0
 
     # Alpha bot movement parameters
-    platform_max_linear_velocity = 0.15  # m/s
+    platform_max_linear_velocity = 0.3  # m/s
     platform_max_angular_velocity = 1.0  # rad/s
 
     # Curriculum learning parameters
@@ -160,7 +161,7 @@ class CrazyflieEnv(DirectRLEnv):
         self._platform_joint_indices = None
 
         # Platform target velocities (linear and angular)
-        self._platform_target_lin_vel = torch.rand(self.num_envs, 3, device=self.device) / 2.0
+        self._platform_target_lin_vel = torch.rand(self.num_envs, 3, device=self.device)
 
         # Goal position (platform center)
         self._desired_pos_w = torch.zeros(self.num_envs, 3, device=self.device)
@@ -292,7 +293,7 @@ class CrazyflieEnv(DirectRLEnv):
         self._platform.write_root_velocity_to_sim(root_vel)
 
     def _get_observations(self) -> dict:
-        self._desired_pos_w = self.landing_target_view.data.root_pos_w + torch.tensor([0.0, 0.0, 0.15], device=self.device)
+        self._desired_pos_w = self.landing_target_view.data.root_pos_w + torch.tensor([0.0, 0.0, 0.05], device=self.device)
         desired_pos_b, _ = subtract_frame_transforms(
             self._robot.data.root_pos_w, self._robot.data.root_quat_w, self._desired_pos_w
         )
@@ -333,7 +334,8 @@ class CrazyflieEnv(DirectRLEnv):
         
         is_at_landing_height = torch.abs(height_error) < self.cfg.landing_height_threshold
         is_aligned = horizontal_dist < (self.cfg.landing_radius / 2.0)
-        landing_reward = (is_at_landing_height & is_aligned).float()
+        is_inactive = lin_vel < 0.01 and ang_vel < 0.01
+        landing_reward = (is_at_landing_height & is_aligned & is_inactive).float()
         
         rewards = {
             "lin_vel": lin_vel * self.cfg.lin_vel_reward_scale * self.step_dt,
@@ -398,7 +400,7 @@ class CrazyflieEnv(DirectRLEnv):
         self._platform.write_root_velocity_to_sim(torch.zeros(num_envs_to_reset, 6, device=self.device), env_ids)
         self._platform_wheel_vel[env_ids] = 0.0
 
-        curr_factor = min(self.common_step_counter / self.cfg.curriculum_length_steps, 1.0)
+        curr_factor = 1.0 if self.cfg.test else min(self.common_step_counter / self.cfg.curriculum_length_steps, 1.0)
         
         vel_scale = max(0.0, (curr_factor - 0.5) * 2.0)
 
