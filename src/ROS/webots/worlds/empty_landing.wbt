@@ -1,0 +1,64 @@
+#VRML_SIM R2025a utf8
+
+EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2023b/projects/objects/backgrounds/protos/TexturedBackground.proto"
+EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2023b/projects/appearances/protos/Parquetry.proto"
+EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2023b/projects/objects/lights/protos/CeilingLight.proto"
+EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2023b/projects/robots/bitcraze/crazyflie/protos/Crazyflie.proto"
+EXTERNPROTO "/home/u24/Desktop/SI5-PER/src/ROS/webots/proto/Alphabot2.proto"
+
+WorldInfo {
+  info [
+    "Bitcraze's Crazyflie drone with autonomoy."
+    "This simulation has the Crazyflie in an apartement with wall following'"
+  ]
+  title "Crazyflie Apartment"
+}
+Viewpoint {
+  orientation 0.2362586840720271 0.002375648436902974 -0.9716872904875614 3.122061256742534
+  position 6.150554186017443 -1.90297328314289 6.150341520044688
+  exposure 0.5
+  follow "Crazyflie"
+}
+TexturedBackground {
+  texture "empty_office"
+  skybox FALSE
+  skyColor [
+    0.2 0.2 0.2
+  ]
+}
+DEF FLOOR Solid {
+  translation -4.95 -3.3 0
+  children [
+    Shape {
+      appearance Parquetry {
+        textureTransform TextureTransform {
+          scale 6 9
+        }
+      }
+      geometry DEF FLOOR_PLANE Plane {
+        size 9.9 6.6
+      }
+    }
+  ]
+  name "floor"
+  boundingObject USE FLOOR_PLANE
+  locked TRUE
+}
+CeilingLight {
+  translation -6.2841 -2.4706 2.4
+  name "ceiling light 1(1)"
+  pointLightIntensity 5
+}
+CeilingLight {
+  translation -1.3341 -2.4706 2.4
+  name "ceiling light 1"
+  pointLightIntensity 5
+}
+Crazyflie {
+  translation -5 -2 0.015
+  controller "<extern>"
+}
+Alphabot2 {
+  translation -5 -2 0.005
+  controller "<extern>"
+}
