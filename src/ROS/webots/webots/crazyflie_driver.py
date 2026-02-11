@@ -78,9 +78,9 @@ class CrazyflieDriver:
 
         # Intialize ROS
         rclpy.init(args=None)
-        self.node = rclpy.create_node("crazyflie_driver")
+        self.node = rclpy.create_node("crazyflie_driver", namespace="crazyflie")
         self.node.create_subscription(Twist, "cmd_vel", self.cmd_vel_callback, 1)
-        self.laser_publisher = self.node.create_publisher(LaserScan, "/scan", 1)
+        self.laser_publisher = self.node.create_publisher(LaserScan, "scan", 1)
         self.static_broadcaster = TransformBroadcaster(self.node)
         self.first_time = True
 
