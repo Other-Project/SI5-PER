@@ -13,9 +13,15 @@ class RLModelNode(LifecycleNode):
         self.declare_parameter("robot_prefix", "/crazyflie")
         self.declare_parameter("platform_prefix", "/alphabot2")
         self.declare_parameter("onnx_path", "")
+        self.declare_parameter("robot_cmd_topic", "/crazyflie/cmd_vel")
 
+        # Topics
         robot_prefix = self.get_parameter("robot_prefix").value
         platform_prefix = self.get_parameter("platform_prefix").value
+        self.robot_cmd_topic = self.get_parameter("robot_cmd_topic").value
+        self.robot_odom_topic = f"{robot_prefix}/odom"
+        self.platform_odom_topic = f"{platform_prefix}/odom"
+
         self.dt = 1 / 100  # Must be the same as during training
         self.onnx_path = self.get_parameter("onnx_path").value
         if self.onnx_path == "":
@@ -30,11 +36,6 @@ class RLModelNode(LifecycleNode):
         self.output_name = self.ort_session.get_outputs()[0].name
         self.output_shape = self.ort_session.get_outputs()[0].shape
         self.get_logger().info(f"Model loaded: {self.input_name} {self.input_shape} -> {self.output_name} {self.output_shape}")
-
-        # Topics
-        self.robot_odom_topic = f"{robot_prefix}/odom"
-        self.platform_odom_topic = f"{platform_prefix}/odom"
-        self.robot_cmd_topic = f"{robot_prefix}/cmd_vel"
 
         self.trigger_configure()
 
@@ -137,32 +138,25 @@ class RLModelNode(LifecycleNode):
         # Format for ONNX (Batch Size of 1)
         # Shape: [1, number_of_observations]
         input_tensor = obs.reshape(1, -1).astype(np.float32)
-        self.get_logger().info(f"Input: {np.array_str(input_tensor, precision=3, suppress_small=True)}")
+        self.get_logger().debug(f"Input: {np.array_str(input_tensor, precision=3, suppress_small=True)}")
 
         # Inference (Model execution)
         outputs = self.ort_session.run([self.output_name], {self.input_name: input_tensor})[0][0]
-        self.get_logger().info(f"Outputs: {np.array_str(outputs, precision=3, suppress_small=True)}")
+        self.get_logger().debug(f"Outputs: {np.array_str(outputs, precision=3, suppress_small=True)}")
 
         velocity_x, velocity_y, velocity_z, angular_velocity_z = outputs.clip(-1.0, 1.0)
-        factor = 0.2
-        max_val = max(abs(velocity_z) * factor, factor)
-        velocity_x = np.clip(velocity_x, -max_val, max_val)
-        velocity_y = np.clip(velocity_y, -max_val, max_val)
-        angular_velocity_z = np.clip(angular_velocity_z, -max_val, max_val)
 
-        self.get_logger().info(
+        self.get_logger().debug(
             f"Commanded velocities -> vx: {velocity_x:.3f}, vy: {velocity_y:.3f}, vz: {velocity_z:.3f}, wz: {angular_velocity_z:.3f}"
         )
 
-        # Publish action
-        msg = Twist()
-        msg.linear.x = float(velocity_x * 0.5)
-        msg.linear.y = float(velocity_y * 0.5)
-        msg.linear.z = float(velocity_z * 0.5)
-        msg.angular.x = 0.0  # ignored
-        msg.angular.y = 0.0  # ignored
-        msg.angular.z = float(angular_velocity_z * 0.4)
-        self._robot_cmd_pub.publish(msg)
+        # Publish Twist message to control service
+        twist_msg = Twist()
+        twist_msg.linear.x = float(velocity_x * 0.5)
+        twist_msg.linear.y = float(velocity_y * 0.5)
+        twist_msg.linear.z = float(velocity_z * 0.5)
+        twist_msg.angular.z = float(angular_velocity_z * 0.4)
+        self._robot_cmd_pub.publish(twist_msg)
 
 
 def main(args=None):

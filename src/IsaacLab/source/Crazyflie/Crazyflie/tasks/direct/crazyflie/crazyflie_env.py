@@ -17,7 +17,7 @@ from isaaclab.scene import InteractiveSceneCfg
 from isaaclab.sim import SimulationCfg
 from isaaclab.terrains import TerrainImporterCfg
 from isaaclab.utils import configclass
-from isaaclab.utils.math import subtract_frame_transforms, quat_apply
+from isaaclab.utils.math import subtract_frame_transforms, quat_apply, quat_apply_inverse
 from isaaclab_assets import ANYDRIVE_3_SIMPLE_ACTUATOR_CFG  # isort: skip
 ##
 # Pre-defined configs
@@ -95,10 +95,26 @@ class CrazyflieEnvCfg(DirectRLEnvCfg):
 
     # velocity command limits
     max_linear_velocity = 0.5  # m/s
-    max_angular_velocity_z = 0.4  # rad/s
+    max_angular_velocity_z = 1.0  # rad/s
 
     # tilt constraint
-    tilt_limit_deg = 30.0
+    tilt_limit_deg = 80.0
+    
+    # P-gains (Force generation)
+    gain_vel_xy = 2.0 
+    gain_vel_z = 5.0
+    
+    # P-gains (Torque generation)
+    gain_att_xy = 0.04
+    gain_att_z = 0.01
+    
+    # D-gains for angular damping
+    gain_ang_vel_xy = 0.001
+    gain_ang_vel_z = 0.0003
+
+    # Physical Limits
+    max_thrust_force = 0.6
+    max_torque = 0.006
 
     # alpha bot
     platform: ArticulationCfg = ALPHABOT_CFG.replace(
@@ -110,7 +126,9 @@ class CrazyflieEnvCfg(DirectRLEnvCfg):
     ang_vel_reward_scale = -0.01
     distance_to_goal_reward_scale = 15.0
     tilt_constraint_reward_scale = -5.0
-    unsafe_velocity_reward_scale = -1.0
+    height_penalty_scale = -5.0
+    
+    safe_height = 0.5
 
     # random pose range
     platform_spawn_range_xy = 2.0
@@ -152,7 +170,7 @@ class CrazyflieEnv(DirectRLEnv):
                 "ang_vel",
                 "distance_to_goal",
                 "tilt_constraint",
-                "unsafe_velocity",
+                "height_penalty"
             ]
         }
         # Get specific body indices
@@ -205,19 +223,69 @@ class CrazyflieEnv(DirectRLEnv):
 
     def _apply_action(self):
         dt = self.sim.cfg.dt * self.cfg.decimation
+        
+        target_v_x, target_v_y, target_v_z = self._drone_target_lin_vel_b[:, :3].unbind(dim=-1)
+        target_yaw_rate = self._drone_target_ang_vel_b[:, 2]
 
-        drone_target_lin_vel_w = quat_apply(
-            self._robot.data.root_quat_w,
-            self._drone_target_lin_vel_b
-        )
+        # Current State
+        root_quat = self._robot.data.root_quat_w
+        root_vel_w = self._robot.data.root_lin_vel_w
+        root_ang_vel_b = self._robot.data.root_ang_vel_b
+        mass = self._robot_mass
+        
+        # Velocity Controller
+        vel_b = quat_apply_inverse(root_quat, root_vel_w)
+        
+        error_v_x = target_v_x - vel_b[:, 0]
+        error_v_y = target_v_y - vel_b[:, 1]
+        error_v_z = target_v_z - vel_b[:, 2]
 
-        drone_target_ang_vel_w = quat_apply(
-            self._robot.data.root_quat_w,
-            self._drone_target_ang_vel_b
-        )
+        acc_x = error_v_x * self.cfg.gain_vel_xy
+        acc_y = error_v_y * self.cfg.gain_vel_xy
+        acc_z = error_v_z * self.cfg.gain_vel_z
 
-        self._robot.write_root_velocity_to_sim(
-            torch.cat([drone_target_lin_vel_w, drone_target_ang_vel_w], dim=-1)
+        acc_b = torch.stack([acc_x, acc_y, acc_z], dim=-1)
+        acc_w = quat_apply(root_quat, acc_b)
+        
+        total_force_w = acc_w * mass
+        thrust_command = self._actions[:, 2] 
+        total_force_w[:, 2] += mass * 9.81 * torch.clamp(thrust_command + 1.0, min=0.0, max=1.0)
+
+        # Attitude Controller
+        z_axis_b = torch.zeros_like(total_force_w)
+        z_axis_b[:, 2] = 1.0
+        current_z_w = quat_apply(root_quat, z_axis_b)
+        
+        force_magnitude = torch.norm(total_force_w, dim=1, keepdim=True)
+        force_magnitude = torch.clamp(force_magnitude, min=1e-6) 
+        desired_z_w = total_force_w / force_magnitude
+
+        # Orientation Error
+        rotation_error_w = torch.linalg.cross(current_z_w, desired_z_w)
+        rotation_error_b = quat_apply_inverse(root_quat, rotation_error_w)
+
+        thrust_val = torch.sum(total_force_w * current_z_w, dim=1, keepdim=True)
+        thrust_val = torch.clamp(thrust_val, 0.0, self.cfg.max_thrust_force)
+        
+        torque_x = self.cfg.gain_att_xy * rotation_error_b[:, 0] - self.cfg.gain_ang_vel_xy * root_ang_vel_b[:, 0]
+        torque_y = self.cfg.gain_att_xy * rotation_error_b[:, 1] - self.cfg.gain_ang_vel_xy * root_ang_vel_b[:, 1]
+        
+        yaw_error = target_yaw_rate - root_ang_vel_b[:, 2]
+        torque_z = self.cfg.gain_ang_vel_z * yaw_error
+
+        torques = torch.stack([torque_x, torque_y, torque_z], dim=-1)
+        torques = torch.clamp(torques, -self.cfg.max_torque, self.cfg.max_torque)
+        
+        forces = torch.zeros_like(torques)
+        forces[:, 2] = thrust_val.squeeze()
+        
+        forces_w = quat_apply(root_quat, forces)
+        torques_w = quat_apply(root_quat, torques)
+
+        self._robot.set_external_force_and_torque(
+            forces=forces_w.unsqueeze(1),
+            torques=torques_w.unsqueeze(1),
+            body_ids=self._body_id
         )
 
         # Apply platform control
@@ -256,15 +324,17 @@ class CrazyflieEnv(DirectRLEnv):
         flatness = grav_b[:, 2].abs()
         tilt_penalty = torch.square(
             torch.clamp(torch.cos(torch.deg2rad_(torch.tensor(self.cfg.tilt_limit_deg))) - flatness, min=0.0))
-        v_xy = torch.linalg.vector_norm(self._robot.data.root_lin_vel_b[:, :2], dim=1)
-        v_z = self._robot.data.root_lin_vel_b[:, 2]
-        unsafe_ratio = torch.relu(v_xy - torch.abs(v_z))
+        root_z = self._robot.data.root_pos_w[:, 2]
+        horizontal_dist = torch.linalg.norm(self._robot.data.root_pos_w[:, :2] - self._desired_pos_w[:, :2], dim=1)
+        height_weight = torch.clamp((horizontal_dist - 0.2) / 0.3, min=0.0, max=1.0)
+        height_violation = torch.clamp(self.cfg.safe_height - root_z, min=0.0)
+        weighted_height_penalty = height_violation * height_weight
         rewards = {
             "lin_vel": lin_vel * self.cfg.lin_vel_reward_scale * self.step_dt,
             "ang_vel": ang_vel * self.cfg.ang_vel_reward_scale * self.step_dt,
             "distance_to_goal": distance_to_goal_mapped * self.cfg.distance_to_goal_reward_scale * self.step_dt,
-            "tilt_constraint": tilt_penalty * self.cfg.tilt_constraint_reward_scale * self.step_dt,
-            "unsafe_velocity": unsafe_ratio * self.cfg.unsafe_velocity_reward_scale * self.step_dt,
+            "tilt_constraint": tilt_penalty * self.cfg.tilt_constraint_reward_scale * self.step_dt, 
+            "height_penalty": weighted_height_penalty * self.cfg.height_penalty_scale * self.step_dt
         }
         reward = torch.sum(torch.stack(list(rewards.values())), dim=0)
         # Logging

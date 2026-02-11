@@ -20,6 +20,12 @@ sim: build
 	. .out/ros_install/setup.sh && \
 		ros2 launch crazyflie_launch simulation.launch.py
 
+sim_webots: build
+	export PYTHONPATH='src/ROS/.venv/lib/python3.12/site-packages' && \
+	. src/ROS/.venv/bin/activate && \
+	. .out/ros_install/setup.sh && \
+		ros2 launch crazyflie_launch simulation_webots.launch.py
+
 sim_carto: build
 	export PYTHONPATH='src/ROS/.venv/lib/python3.12/site-packages' && \
 	. src/ROS/.venv/bin/activate && \
@@ -28,8 +34,12 @@ sim_carto: build
 
 teleop_drone:
 	. /opt/ros/*/setup.sh && \
+		ros2 topic pub -1 /crazyflie/land std_msgs/Bool "data: False" 
+	. /opt/ros/*/setup.sh && \
 		ros2 run teleop_twist_keyboard teleop_twist_keyboard \
 			--ros-args --remap cmd_vel:=crazyflie/input_cmd_vel
+	. /opt/ros/*/setup.sh && \
+		ros2 topic pub -1 /crazyflie/land std_msgs/Bool "data: True" 
 
 teleop_bot:
 	. /opt/ros/*/setup.sh && \
@@ -37,8 +47,12 @@ teleop_bot:
 			--ros-args --remap cmd_vel:=alphabot2/input_cmd_vel
 teleop_drone_joy:
 	. /opt/ros/*/setup.sh && \
+		ros2 topic pub -1 /crazyflie/land std_msgs/Bool "data: False" 
+	. /opt/ros/*/setup.sh && \
 		ros2 launch teleop_twist_joy teleop-launch.py \
 			config_filepath:="$(CURDIR)/utils/xone.config.yaml" joy_vel:='crazyflie/input_cmd_vel'
+	. /opt/ros/*/setup.sh && \
+		ros2 topic pub -1 /crazyflie/land std_msgs/Bool "data: True" 
 
 teleop_bot_joy:
 	. /opt/ros/*/setup.sh && \

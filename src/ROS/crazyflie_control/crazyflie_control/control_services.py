@@ -1,3 +1,5 @@
+import math
+
 import rclpy
 from geometry_msgs.msg import Twist
 from nav_msgs.msg import Odometry
@@ -7,93 +9,113 @@ from rclpy.node import Node
 class ControlServices(Node):
     def __init__(self):
         super().__init__("control_services")
-        self.declare_parameter("hover_height", 0.5)
+
+        # Declare and retrieve parameters
         self.declare_parameter("robot_prefix", "/crazyflie")
-        self.declare_parameter("incoming_twist_topic", "/cmd_vel")
+        self.declare_parameter("incoming_twist_topic", "/crazyflie/input_cmd_vel")
+        self.declare_parameter("max_linear", 0.25)
         self.declare_parameter("max_ang_z_rate", 0.4)
+        self.declare_parameter("height_hold_gain", 1.0)
+        self.declare_parameter("flying_threshold", 0.1)
 
-        hover_height = self.get_parameter("hover_height").value
         robot_prefix = self.get_parameter("robot_prefix").value
-        incoming_twist_topic = self.get_parameter("incoming_twist_topic").value
-        max_ang_z_rate = self.get_parameter("max_ang_z_rate").value
+        incoming_topic = self.get_parameter("incoming_twist_topic").value
+        self.max_linear = self.get_parameter("max_linear").value
+        self.max_ang_z = self.get_parameter("max_ang_z_rate").value
+        self.kp_z = self.get_parameter("height_hold_gain").value
+        self.fly_threshold = self.get_parameter("flying_threshold").value
 
-        self.publisher_ = self.create_publisher(Twist, robot_prefix + "/cmd_vel", 10)
-        self.subscriber = self.create_subscription(Odometry, robot_prefix + "/odom", self.odometry_callback, 10)
-        self.subscriber = self.create_subscription(Twist, incoming_twist_topic, self.cmd_vel_callback, 10)
-        self.timer = self.create_timer(0.1, self.timer_callback)
+        # Setup communication
+        self.cmd_pub = self.create_publisher(Twist, f"{robot_prefix}/cmd_vel", 10)
+        self.odom_sub = self.create_subscription(Odometry, f"{robot_prefix}/odom", self.odom_cb, 10)
+        self.cmd_sub = self.create_subscription(Twist, incoming_topic, self.cmd_cb, 10)
+        self.timer = self.create_timer(0.1, self.control_loop)
 
-        self.takeoff_command = False
-        self.current_pose = Odometry().pose.pose
-        self.takeoff_height = hover_height
-        self.max_ang_z_rate = max_ang_z_rate
+        # Initialize variables
         self.is_flying = False
-        self.keep_height = False
-        self.teleop_cmd = Twist()
+        self.current_pos = None
+        self.desired_z = 0.0
+        self.input_cmd = Twist()
 
-    def timer_callback(self):
-        msg = self.teleop_cmd
-        height_command = msg.linear.z
-        new_cmd_msg = Twist()
+        self.get_logger().info("Control Services: Waiting for Odometry...")
 
-        # If the drone is flying, only allow to transfer the twist message
-        if self.is_flying:
-            new_cmd_msg.linear.x = msg.linear.x
-            new_cmd_msg.linear.y = msg.linear.y
-            new_cmd_msg.linear.z = msg.linear.z
-            new_cmd_msg.angular.x = msg.angular.x
-            new_cmd_msg.angular.y = msg.angular.y
-            new_cmd_msg.angular.z = msg.angular.z
+    def odom_cb(self, msg: Odometry):
+        init = self.current_pos is None
+        self.current_pos = msg.pose.pose.position
 
-        # If not flying and receiving a velocity height command, takeoff
-        if height_command > 0 and not self.is_flying:
-            new_cmd_msg.linear.z = 0.5
-            if self.current_pose.position.z > self.takeoff_height:
-                # stop going up if height is reached
-                new_cmd_msg.linear.z = 0.0
-                self.teleop_cmd.linear.z = 0.0
+        # Detect startup state (ground or mid-air)
+        if init:
+            if self.current_pos.z > self.fly_threshold:
                 self.is_flying = True
-                self.get_logger().info("Takeoff completed")
-
-        # If flying and if the height command is negative, and it is below a certain height
-        # then consider it a land
-        if height_command < 0 and self.is_flying:
-            if self.current_pose.position.z < 0.1:
-                new_cmd_msg.linear.z = 0.0
-                self.is_flying = False
-                self.keep_height = False
-                self.get_logger().info("Landing completed")
-
-        # Cap the angular rate command in the z axis
-        if abs(msg.angular.z) > self.max_ang_z_rate:
-            new_cmd_msg.angular.z = self.max_ang_z_rate * abs(msg.angular.z) / msg.angular.z
-
-        # If there is no control in height and the drone is flying, control and maintain the height
-        tolerance = 1e-2
-        if abs(height_command) < tolerance and self.is_flying:
-            if not self.keep_height:
-                self.desired_height = self.current_pose.position.z
-                self.keep_height = True
+                self.desired_z = self.current_pos.z
+                self.get_logger().info(f"Startup Mid-Air ({self.current_pos.z:.2f}m). Engaging Height Hold.")
             else:
-                error = self.desired_height - self.current_pose.position.z
-                new_cmd_msg.linear.z = error
+                self.is_flying = False
+                self.get_logger().info("Startup on Ground. System IDLE.")
 
-        # If there is control in height and the drone is flying, stop maintaining the height
-        if abs(height_command) > tolerance and self.is_flying:
-            if self.keep_height:
-                self.keep_height = False
+    def cmd_cb(self, msg: Twist):
+        self.input_cmd = msg
 
-        self.publisher_.publish(new_cmd_msg)
+    def control_loop(self):
+        if self.current_pos is None:
+            return
 
-    def odometry_callback(self, msg):
-        self.current_pose = msg.pose.pose
+        out_msg = Twist()
+        user_z = self.input_cmd.linear.z
+        tolerance = 1e-2
 
-    def takeoff_callback(self, request, response):
-        self.takeoff_command = True
-        response.success = True
-        return response
+        if not self.is_flying:
+            # Takeoff detection
+            if user_z > 0:
+                # Fixed upward velocity until reaching a safe height, then switch to flying mode
+                safe_takeoff_height = 0.5
+                out_msg.linear.z = 0.5
+                out_msg.linear.x = 0.0
+                out_msg.linear.y = 0.0
+                out_msg.angular.z = 0.0
 
-    def cmd_vel_callback(self, msg):
-        self.teleop_cmd = msg
+                if self.current_pos.z > safe_takeoff_height:
+                    self.get_logger().info("Takeoff altitude reached -> Switch to FLYING")
+                    self.is_flying = True
+                    self.desired_z = self.current_pos.z
+        else:
+            # Pass through XY/Yaw commands
+            out_msg.linear.x = self.input_cmd.linear.x
+            out_msg.linear.y = self.input_cmd.linear.y
+            out_msg.angular.x = self.input_cmd.angular.x
+            out_msg.angular.y = self.input_cmd.angular.y
+            out_msg.angular.z = self.input_cmd.angular.z
+
+            # Landing detection
+            if user_z < 0 and self.current_pos.z < self.fly_threshold:
+                self.get_logger().info("Landing detected -> Switch to IDLE")
+                self.is_flying = False
+                self.cmd_pub.publish(Twist())  # Cut motors
+                return
+
+            # Z-axis control: manual or height hold
+            if abs(user_z) > tolerance:
+                out_msg.linear.z = user_z
+                self.desired_z = self.current_pos.z
+            else:
+                error = self.desired_z - self.current_pos.z
+                out_msg.linear.z = error * self.kp_z
+
+        # Clip outputs
+        xy_mag = math.hypot(out_msg.linear.x, out_msg.linear.y)  # Clip by magnitude to preserves direction
+        if xy_mag > self.max_linear:
+            scale = self.max_linear / xy_mag
+            out_msg.linear.x *= scale
+            out_msg.linear.y *= scale
+        out_msg.linear.z = self.clamp(out_msg.linear.z, 2.0)
+        out_msg.angular.x = self.input_cmd.angular.x
+        out_msg.angular.y = self.input_cmd.angular.y
+        out_msg.angular.z = self.clamp(out_msg.angular.z, self.max_ang_z)
+
+        self.cmd_pub.publish(out_msg)
+
+    def clamp(self, value, limit):
+        return max(min(value, limit), -limit)
 
 
 def main(args=None):
