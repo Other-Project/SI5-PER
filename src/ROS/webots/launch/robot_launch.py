@@ -42,7 +42,6 @@ def generate_launch_description():
         parameters=[
             {"robot_description": crazyflie_description_path},
         ],
-        remappings=[("/cmd_vel", "/crazyflie/cmd_vel"), ("/odom", "/crazyflie/odom")],
         respawn=True,
     )
 
@@ -50,7 +49,6 @@ def generate_launch_description():
     platform_driver = WebotsController(
         robot_name="Alphabot2",
         parameters=[{"robot_description": platform_description_path}],
-        remappings=[("/cmd_vel", "/alphabot2/cmd_vel"), ("/odom", "/alphabot2/odom")],
         respawn=True,
     )
 

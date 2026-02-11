@@ -35,7 +35,7 @@ class Alphabot2Driver:
         # --- 2. Initialize ROS 2 Node (The Fix) ---
         # We explicitly start the node here, matching the Crazyflie example.
         rclpy.init(args=None)
-        self.node = rclpy.create_node("alphabot2_driver")
+        self.node = rclpy.create_node("alphabot2_driver", namespace="alphabot2")
 
         # --- 3. Create Publishers & Subscribers ---
         self.node.create_subscription(Twist, "cmd_vel", self.__cmd_vel_callback, 1)
