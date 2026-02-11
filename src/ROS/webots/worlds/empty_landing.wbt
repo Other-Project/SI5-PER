@@ -27,7 +27,7 @@ TexturedBackground {
   ]
 }
 DEF FLOOR Solid {
-  translation -4.95 -3.3 0
+  translation 0 0 0
   children [
     Shape {
       appearance Parquetry {
@@ -55,10 +55,10 @@ CeilingLight {
   pointLightIntensity 5
 }
 Crazyflie {
-  translation -5 -2 0.015
+  translation 0.5 0.5 2.0
   controller "<extern>"
 }
 Alphabot2 {
-  translation -5 -2 0.005
+  translation 0 0 0.005
   controller "<extern>"
 }
