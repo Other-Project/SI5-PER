@@ -39,15 +39,15 @@ JACKAL_CFG = ArticulationCfg(
     actuators={
         JACKAL_ACTUATORS_LEFT_WHEEL: ImplicitActuatorCfg(
             joint_names_expr=JACKAL_JOINTS_NAMES[JACKAL_ACTUATORS_LEFT_WHEEL],
-            effort_limit=500.0,
-            velocity_limit=10.0,
+            effort_limit_sim=500.0,
+            velocity_limit_sim=10.0,
             stiffness=0.0,
             damping=1000.0,
         ),
         JACKAL_ACTUATORS_RIGHT_WHEEL: ImplicitActuatorCfg(
             joint_names_expr=JACKAL_JOINTS_NAMES[JACKAL_ACTUATORS_RIGHT_WHEEL],
-            effort_limit=500.0,
-            velocity_limit=10.0,
+            effort_limit_sim=500.0,
+            velocity_limit_sim=10.0,
             stiffness=0.0,
             damping=1000.0,
         ),
