@@ -99,7 +99,9 @@ class CrazyflieDriver:
             self.past_y_global = self.gps.getValues()[1]
             self.past_z_global = self.gps.getValues()[2]
             self.past_time = self.robot.getTime()
+            self.height_desired = self.gps.getValues()[2]  # Init from actual altitude
             self.first_time = False
+            return  # Skip first step (dt=0)
         else:
             dt = self.robot.getTime() - self.past_time
 
@@ -243,9 +245,9 @@ class pid_velocity_fixed_height_controller:
             "kd_att_rp": 0.1,
             "kp_vel_xy": 2,
             "kd_vel_xy": 0.5,
-            "kp_z": 10,
-            "ki_z": 5,
-            "kd_z": 5,
+            "kp_z": 2,
+            "ki_z": 0.5,
+            "kd_z": 0.5,
         }
 
         # Velocity PID control
