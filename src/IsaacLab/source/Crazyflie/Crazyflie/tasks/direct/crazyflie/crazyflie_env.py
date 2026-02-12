@@ -295,7 +295,7 @@ class CrazyflieEnv(DirectRLEnv):
         self._platform.write_root_velocity_to_sim(root_vel)
 
     def _get_observations(self) -> dict:
-        self._desired_pos_w = self.landing_target_view.data.root_pos_w + torch.tensor([0.0, 0.0, 0.05], device=self.device)
+        self._desired_pos_w = self.landing_target_view.data.root_pos_w + torch.tensor([0.0, 0.0, 0.05302], device=self.device)
         desired_pos_b, _ = subtract_frame_transforms(
             self._robot.data.root_pos_w, self._robot.data.root_quat_w, self._desired_pos_w
         )
@@ -472,7 +472,7 @@ class CrazyflieEnv(DirectRLEnv):
         if debug_vis:
             if not hasattr(self, "goal_pos_visualizer"):
                 marker_cfg = CUBOID_MARKER_CFG.copy()
-                marker_cfg.markers["cuboid"].size = (0.05, 0.05, 0.05)
+                marker_cfg.markers["cuboid"].size = (0.02, 0.02, 0.02)
                 # -- goal pose
                 marker_cfg.prim_path = "/Visuals/Command/goal_position"
                 self.goal_pos_visualizer = VisualizationMarkers(marker_cfg)
