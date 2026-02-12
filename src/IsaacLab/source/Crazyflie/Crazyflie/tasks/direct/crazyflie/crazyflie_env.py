@@ -124,14 +124,13 @@ class CrazyflieEnvCfg(DirectRLEnvCfg):
     lin_vel_reward_scale = -0.05
     ang_vel_reward_scale = -0.01
     distance_to_goal_reward_scale = 15.0
-    tilt_constraint_penalty_scale = -5.0
     height_penalty_scale = -5.0
     landing_reward_scale = 200.0
     landing_penalty_scale = -10.0
     action_penalty_scale = -0.01
     
-    landing_height_threshold = 0.15 
-    landing_radius = 0.5 
+    landing_height_threshold = 0.04 
+    landing_radius = 0.02 
 
     # random pose range
     platform_spawn_range_xy = 4.0
@@ -174,10 +173,8 @@ class CrazyflieEnv(DirectRLEnv):
                 "lin_vel",
                 "ang_vel",
                 "distance_to_goal",
-                "tilt_constraint",
                 "height_penalty",
-                "landing_reward",
-                "action_penalty"
+                "landing_reward"
             ]
         }
         # Get specific body indices
@@ -223,8 +220,6 @@ class CrazyflieEnv(DirectRLEnv):
         self._drone_target_ang_vel_b[:, 2] = self._actions[:, 3] * self.cfg.max_angular_velocity_z
 
     def _apply_action(self):
-        dt = self.sim.cfg.dt * self.cfg.decimation
-        
         target_v_x, target_v_y, target_v_z = self._drone_target_lin_vel_b[:, :3].unbind(dim=-1)
         target_yaw_rate = self._drone_target_ang_vel_b[:, 2]
 
@@ -299,11 +294,13 @@ class CrazyflieEnv(DirectRLEnv):
         desired_pos_b, _ = subtract_frame_transforms(
             self._robot.data.root_pos_w, self._robot.data.root_quat_w, self._desired_pos_w
         )
+        platform_vel_b = quat_apply_inverse(self._robot.data.root_quat_w, self.landing_target_view.data.root_lin_vel_w)
         obs = torch.cat(
             [
                 self._robot.data.root_lin_vel_b,
                 self._robot.data.root_quat_w,
                 desired_pos_b,
+                platform_vel_b,
             ],
             dim=-1,
         )
@@ -325,11 +322,6 @@ class CrazyflieEnv(DirectRLEnv):
         
         distance_to_goal_mapped = 1.0 / (1.0 + torch.square(distance_to_goal / 0.5))
 
-        grav_b = self._robot.data.projected_gravity_b
-        flatness = grav_b[:, 2].abs()
-        tilt_penalty = torch.square(
-            torch.clamp(torch.cos(torch.deg2rad_(torch.tensor(self.cfg.tilt_limit_deg))) - flatness, min=0.0))
-
         horizontal_dist = torch.linalg.norm(root_pos_w[:, :2] - target_pos_w[:, :2], dim=1)
         on_top_of_target = horizontal_dist < self.cfg.landing_radius
         height_error = root_pos_w[:, 2] - target_pos_w[:, 2]
@@ -337,20 +329,15 @@ class CrazyflieEnv(DirectRLEnv):
         
         is_at_landing_height = torch.abs(height_error) < self.cfg.landing_height_threshold
         is_aligned = horizontal_dist < (self.cfg.landing_radius / 2.0)
-        is_motors_off = thrust_action < -0.95
-        landing_reward = (is_at_landing_height & is_aligned & is_motors_off).float()
         
-        thrust_magnitude = torch.square(self._actions[:, 2] + 1.0)
-        action_penalty = thrust_magnitude * self.cfg.action_penalty_scale * self.step_dt
-        
+        landing_reward = (is_at_landing_height & is_aligned).float() * (1.0 - thrust_action)
+                
         rewards = {
             "lin_vel": lin_vel * self.cfg.lin_vel_reward_scale * self.step_dt,
             "ang_vel": ang_vel * self.cfg.ang_vel_reward_scale * self.step_dt,
             "distance_to_goal": distance_to_goal_mapped * self.cfg.distance_to_goal_reward_scale * self.step_dt,
-            "tilt_constraint": tilt_penalty * self.cfg.tilt_constraint_penalty_scale * self.step_dt, 
             "height_penalty": height_penalty * self.cfg.height_penalty_scale * self.step_dt,
-            "landing_reward": landing_reward * self.cfg.landing_reward_scale * self.step_dt,
-            "action_penalty": action_penalty * self.cfg.action_penalty_scale * self.step_dt,
+            "landing_reward": landing_reward * self.cfg.landing_reward_scale * self.step_dt
         }
         reward = torch.sum(torch.stack(list(rewards.values())), dim=0)
         # Logging
@@ -360,7 +347,7 @@ class CrazyflieEnv(DirectRLEnv):
 
     def _get_dones(self) -> tuple[torch.Tensor, torch.Tensor]:
         time_out = self.episode_length_buf >= self.max_episode_length - 1
-        died_pos = torch.logical_or(self._robot.data.root_pos_w[:, 2] <= 0.05, self._robot.data.root_pos_w[:, 2] > 4.0)
+        died_pos = torch.logical_or(self._robot.data.root_pos_w[:, 2] <= 0.1, self._robot.data.root_pos_w[:, 2] > 4.0)
 
         grav_b = self._robot.data.projected_gravity_b
         died_tilt = grav_b[:, 2].abs() < 0.5
