@@ -1,23 +1,3 @@
-#
-#  ...........       ____  _ __
-#  |  ,-^-,  |      / __ )(_) /_______________ _____  ___
-#  | (  O  ) |     / __  / / __/ ___/ ___/ __ `/_  / / _ \
-#  | / ,..´  |    / /_/ / / /_/ /__/ /  / /_/ / / /_/  __/
-#     +.......   /_____/_/\__/\___/_/   \__,_/ /___/\___/
-
-# MIT License
-
-# Copyright (c) 2023 Bitcraze
-
-
-"""
-file: robot_launch.py
-
-Launch Webots Crazyflie ROS2 driver.
-
-Author:   Kimberly McGuire (Bitcraze AB)
-"""
-
 import os
 
 import launch
@@ -56,7 +36,7 @@ def generate_launch_description():
         [
             DeclareLaunchArgument(
                 "world",
-                default_value="crazyflie_apartment.wbt",
+                default_value="empty_landing.wbt",
                 description="Choose one of the world files from `/webots/worlds` directory",
             ),
             webots,

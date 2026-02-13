@@ -532,6 +532,6 @@ Crazyflie {
   controller "<extern>"
 }
 Alphabot2 {
-  translation -5 -2 0
+  translation -5 -2 0.005
   controller "<extern>"
 }

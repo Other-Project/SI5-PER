@@ -20,6 +20,7 @@ import numpy as np
 import rclpy
 import tf_transformations
 from geometry_msgs.msg import TransformStamped, Twist
+from nav_msgs.msg import Odometry
 from sensor_msgs.msg import LaserScan
 from tf2_ros import TransformBroadcaster
 
@@ -66,6 +67,7 @@ class CrazyflieDriver:
         # Initialize variables
         self.past_x_global = 0
         self.past_y_global = 0
+        self.past_z_global = 0
         self.past_time = self.robot.getTime()
 
         # Crazyflie velocity PID controller
@@ -78,9 +80,10 @@ class CrazyflieDriver:
 
         # Intialize ROS
         rclpy.init(args=None)
-        self.node = rclpy.create_node("crazyflie_driver")
+        self.node = rclpy.create_node("crazyflie_driver", namespace="crazyflie")
         self.node.create_subscription(Twist, "cmd_vel", self.cmd_vel_callback, 1)
-        self.laser_publisher = self.node.create_publisher(LaserScan, "/scan", 1)
+        self.laser_publisher = self.node.create_publisher(LaserScan, "scan", 1)
+        self.odom_publisher = self.node.create_publisher(Odometry, "odom", 1)
         self.static_broadcaster = TransformBroadcaster(self.node)
         self.first_time = True
 
@@ -94,8 +97,11 @@ class CrazyflieDriver:
         if self.first_time:
             self.past_x_global = self.gps.getValues()[0]
             self.past_y_global = self.gps.getValues()[1]
+            self.past_z_global = self.gps.getValues()[2]
             self.past_time = self.robot.getTime()
+            self.height_desired = self.gps.getValues()[2]  # Init from actual altitude
             self.first_time = False
+            return  # Skip first step (dt=0)
         else:
             dt = self.robot.getTime() - self.past_time
 
@@ -110,6 +116,7 @@ class CrazyflieDriver:
         y_global = self.gps.getValues()[1]
         v_y_global = (y_global - self.past_y_global) / dt
         z_global = self.gps.getValues()[2]
+        v_z_global = (z_global - self.past_z_global) / dt
 
         # Get body fixed velocities
         cosyaw = cos(yaw)
@@ -162,6 +169,34 @@ class CrazyflieDriver:
 
         self.static_broadcaster.sendTransform(laser_transform)
 
+        # Publish Odometry
+        odom_msg = Odometry()
+        odom_msg.header.stamp = self.node.get_clock().now().to_msg()
+        odom_msg.header.frame_id = "odom"
+        odom_msg.child_frame_id = "crazyflie"
+
+        # Pose
+        odom_msg.pose.pose.position.x = x_global
+        odom_msg.pose.pose.position.y = y_global
+        odom_msg.pose.pose.position.z = z_global
+        odom_msg.pose.pose.orientation.x = q[0]
+        odom_msg.pose.pose.orientation.y = q[1]
+        odom_msg.pose.pose.orientation.z = q[2]
+        odom_msg.pose.pose.orientation.w = q[3]
+
+        # Twist (Body Frame)
+        odom_msg.twist.twist.linear.x = v_x
+        odom_msg.twist.twist.linear.y = v_y
+        odom_msg.twist.twist.linear.z = v_z_global  # Approx for quadcopter
+
+        # Angular velocities from gyro (Body Frame)
+        gyro_values = self.gyro.getValues()
+        odom_msg.twist.twist.angular.x = gyro_values[0]
+        odom_msg.twist.twist.angular.y = gyro_values[1]
+        odom_msg.twist.twist.angular.z = gyro_values[2]
+
+        self.odom_publisher.publish(odom_msg)
+
         # PID velocity controller with fixed height
         motor_power = self.PID_CF.pid(
             dt, forward_desired, sideways_desired, yaw_desired, self.height_desired, roll, pitch, yaw_rate, altitude, v_x, v_y
@@ -175,6 +210,7 @@ class CrazyflieDriver:
         self.past_time = self.robot.getTime()
         self.past_x_global = x_global
         self.past_y_global = y_global
+        self.past_z_global = z_global
 
 
 class pid_velocity_fixed_height_controller:
@@ -209,9 +245,9 @@ class pid_velocity_fixed_height_controller:
             "kd_att_rp": 0.1,
             "kp_vel_xy": 2,
             "kd_vel_xy": 0.5,
-            "kp_z": 10,
-            "ki_z": 5,
-            "kd_z": 5,
+            "kp_z": 2,
+            "ki_z": 0.5,
+            "kd_z": 0.5,
         }
 
         # Velocity PID control
