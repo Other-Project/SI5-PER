@@ -33,6 +33,7 @@ class ResetPos(Node):
         req.pose = msg
         self.client.call_async(req)
 
+
 def main(args=None):
     rclpy.init(args=args)
     node = ResetPos()

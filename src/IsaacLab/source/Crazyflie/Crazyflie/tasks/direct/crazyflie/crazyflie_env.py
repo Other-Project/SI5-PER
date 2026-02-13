@@ -237,19 +237,6 @@ class CrazyflieEnv(DirectRLEnv):
 
         rclpy.spin_once(self.bridge, timeout_sec=0.0)
 
-        if self.bridge.received_first_msg:
-            root_pos_w = self._robot.data.root_pos_w.clone()
-            root_quat_w = self._robot.data.root_quat_w.clone()
-            root_lin_vel_w = self._robot.data.root_lin_vel_w.clone()
-            root_ang_vel_w = self._robot.data.root_ang_vel_w.clone()
-
-            root_pos_w[0] = self.bridge.latest_pos.to(self.device)
-            root_quat_w[0] = self.bridge.latest_quat.to(self.device)
-            root_lin_vel_w[0] = self.bridge.latest_lin_vel.to(self.device)
-
-            self._robot.write_root_pose_to_sim(torch.cat([root_pos_w, root_quat_w], dim=-1))
-            self._robot.write_root_velocity_to_sim(torch.cat([root_lin_vel_w, root_ang_vel_w], dim=-1))
-
     def _apply_action(self):
         dt = self.sim.cfg.dt * self.cfg.decimation
         
@@ -311,11 +298,24 @@ class CrazyflieEnv(DirectRLEnv):
         forces_w = quat_apply(root_quat, forces)
         torques_w = quat_apply(root_quat, torques)
 
-        self._robot.set_external_force_and_torque(
-            forces=forces_w.unsqueeze(1),
-            torques=torques_w.unsqueeze(1),
-            body_ids=self._body_id
-        )
+        if self.bridge.received_first_msg:
+            root_pos_w = self._robot.data.root_pos_w.clone()
+            root_quat_w = self._robot.data.root_quat_w.clone()
+            root_lin_vel_w = self._robot.data.root_lin_vel_w.clone()
+            root_ang_vel_w = self._robot.data.root_ang_vel_w.clone()
+
+            root_pos_w[0] = self.bridge.latest_pos.to(self.device)
+            root_quat_w[0] = self.bridge.latest_quat.to(self.device)
+            root_lin_vel_w[0] = self.bridge.latest_lin_vel.to(self.device)
+
+            self._robot.write_root_pose_to_sim(torch.cat([root_pos_w, root_quat_w], dim=-1))
+            self._robot.write_root_velocity_to_sim(torch.cat([root_lin_vel_w, root_ang_vel_w], dim=-1))
+        else:
+            self._robot.set_external_force_and_torque(
+                forces=forces_w.unsqueeze(1),
+                torques=torques_w.unsqueeze(1),
+                body_ids=self._body_id
+            )
 
         # Apply platform control
         self._platform.set_joint_velocity_target(
