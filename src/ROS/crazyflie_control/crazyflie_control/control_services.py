@@ -117,6 +117,15 @@ class ControlServices(Node):
     def clamp(self, value, limit):
         return max(min(value, limit), -limit)
 
+    def takeoff_callback(self, request, response):
+        self.takeoff_command = True
+        response.success = True
+        return response
+
+    def cmd_vel_callback(self, msg):
+        self.get_logger().debug(f"Received teleop cmd: {msg}")
+        self.teleop_cmd = msg
+
 
 def main(args=None):
     rclpy.init(args=args)

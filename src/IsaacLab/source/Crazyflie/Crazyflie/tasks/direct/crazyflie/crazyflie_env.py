@@ -7,7 +7,10 @@ from __future__ import annotations
 
 import gymnasium as gym
 import isaaclab.sim as sim_utils
+import rclpy
+import tf2_ros
 import torch
+from geometry_msgs.msg import TransformStamped
 from isaaclab.assets import Articulation, ArticulationCfg
 from isaaclab.envs import DirectRLEnv, DirectRLEnvCfg
 from isaaclab.envs.ui import BaseEnvWindow
@@ -24,6 +27,7 @@ from isaaclab_assets import ANYDRIVE_3_SIMPLE_ACTUATOR_CFG  # isort: skip
 ##
 from isaaclab_assets import CRAZYFLIE_CFG  # isort: skip
 
+from .isaac_ros_bridge import IsaacRosBridge
 from ....assets import ALPHABOT_CFG, ALPHABOT_JOINTS_NAMES, ACTUATORS_LEFT_WHEEL, ACTUATORS_RIGHT_WHEEL
 
 
@@ -194,6 +198,16 @@ class CrazyflieEnv(DirectRLEnv):
         # add handle for debug visualization (this is set to a valid handle inside set_debug_vis)
         self.set_debug_vis(self.cfg.debug_vis)
 
+        if not rclpy.ok():
+            rclpy.init()
+
+        self.bridge = IsaacRosBridge(
+            topic_cmd="/crazyflie/input_cmd_vel",
+            reset_pub="/crazyflie/set_pose",
+            topic_odom="/crazyflie/odom"
+        )
+        print("[INFO] Bridge ROS 2 initialized")
+
     def _setup_scene(self):
         self._robot = Articulation(self.cfg.robot)
         self._platform = Articulation(self.cfg.platform)
@@ -215,11 +229,13 @@ class CrazyflieEnv(DirectRLEnv):
     def _pre_physics_step(self, actions: torch.Tensor):
         self._actions = actions.clone().clamp(-1.0, 1.0)
 
-        self._drone_target_lin_vel_b[:, :3] = self._actions[:, :3] * self.cfg.max_linear_velocity
-
-        self._drone_target_ang_vel_b[:, 0] = 0.0
-        self._drone_target_ang_vel_b[:, 1] = 0.0
+        self._drone_target_lin_vel_b[:] = self._actions[:, :3] * self.cfg.max_linear_velocity
+        self._drone_target_ang_vel_b[:, :2] = 0.0
         self._drone_target_ang_vel_b[:, 2] = self._actions[:, 3] * self.cfg.max_angular_velocity_z
+
+        self.bridge.publish_command(self._drone_target_lin_vel_b[0], self._drone_target_ang_vel_b[0, 2])
+
+        rclpy.spin_once(self.bridge, timeout_sec=0.0)
 
     def _apply_action(self):
         dt = self.sim.cfg.dt * self.cfg.decimation
@@ -282,11 +298,24 @@ class CrazyflieEnv(DirectRLEnv):
         forces_w = quat_apply(root_quat, forces)
         torques_w = quat_apply(root_quat, torques)
 
-        self._robot.set_external_force_and_torque(
-            forces=forces_w.unsqueeze(1),
-            torques=torques_w.unsqueeze(1),
-            body_ids=self._body_id
-        )
+        if self.bridge.received_first_msg:
+            root_pos_w = self._robot.data.root_pos_w.clone()
+            root_quat_w = self._robot.data.root_quat_w.clone()
+            root_lin_vel_w = self._robot.data.root_lin_vel_w.clone()
+            root_ang_vel_w = self._robot.data.root_ang_vel_w.clone()
+
+            root_pos_w[0] = self.bridge.latest_pos.to(self.device)
+            root_quat_w[0] = self.bridge.latest_quat.to(self.device)
+            root_lin_vel_w[0] = self.bridge.latest_lin_vel.to(self.device)
+
+            self._robot.write_root_pose_to_sim(torch.cat([root_pos_w, root_quat_w], dim=-1))
+            self._robot.write_root_velocity_to_sim(torch.cat([root_lin_vel_w, root_ang_vel_w], dim=-1))
+        else:
+            self._robot.set_external_force_and_torque(
+                forces=forces_w.unsqueeze(1),
+                torques=torques_w.unsqueeze(1),
+                body_ids=self._body_id
+            )
 
         # Apply platform control
         self._platform.set_joint_velocity_target(
@@ -422,6 +451,14 @@ class CrazyflieEnv(DirectRLEnv):
         self._robot.write_root_pose_to_sim(default_root_state[:, :7], env_ids)
         self._robot.write_root_velocity_to_sim(default_root_state[:, 7:], env_ids)
         self._robot.write_joint_state_to_sim(joint_pos, joint_vel, None, env_ids)
+
+        if (env_ids == 0).any():
+            idx_in_tensor = (env_ids == 0).nonzero(as_tuple=False).item()
+
+            new_pos = default_root_state[idx_in_tensor, :3]
+            new_quat = default_root_state[idx_in_tensor, 3:7]  # w, x, y, z
+
+            self.bridge.publish_reset_pos(new_pos, new_quat)
 
     def _set_debug_vis_impl(self, debug_vis: bool):
         # create markers if necessary for the first time
