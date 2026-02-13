@@ -12,11 +12,13 @@ def generate_launch_description():
     """Configure ROS nodes for launch"""
     ld = LaunchDescription()
     use_sim_time = LaunchConfiguration("use_sim_time", default="true")
+    world = LaunchConfiguration("world", default="empty_landing.wbt")
 
     # Start Webots
     ld.add_action(
         IncludeLaunchDescription(
             PythonLaunchDescriptionSource(os.path.join(get_package_share_directory("webots"), "launch", "robot_launch.py")),
+            launch_arguments={"use_sim_time": use_sim_time, "world": world}.items(),
         )
     )
 
@@ -86,7 +88,7 @@ def include_launch_file(package: str, launch_file_name: str, namespace: str, par
                         get_package_share_directory(package),
                         "launch",
                         launch_file_name,
-                    )
+                    ),
                 ),
                 launch_arguments=params.items() if params is not None else {},
             ),
