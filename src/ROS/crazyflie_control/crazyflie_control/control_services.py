@@ -17,6 +17,7 @@ class ControlServices(Node):
         self.declare_parameter("max_ang_z_rate", 0.4)
         self.declare_parameter("height_hold_gain", 1.0)
         self.declare_parameter("flying_threshold", 0.1)
+        self.declare_parameter("safe_takeoff_height", 0.5)
 
         robot_prefix = self.get_parameter("robot_prefix").value
         incoming_topic = self.get_parameter("incoming_twist_topic").value
@@ -24,12 +25,14 @@ class ControlServices(Node):
         self.max_ang_z = self.get_parameter("max_ang_z_rate").value
         self.kp_z = self.get_parameter("height_hold_gain").value
         self.fly_threshold = self.get_parameter("flying_threshold").value
+        self.safe_takeoff_height = self.get_parameter("safe_takeoff_height").value
 
         # Setup communication
         self.cmd_pub = self.create_publisher(Twist, f"{robot_prefix}/cmd_vel", 10)
         self.odom_sub = self.create_subscription(Odometry, f"{robot_prefix}/odom", self.odom_cb, 10)
         self.cmd_sub = self.create_subscription(Twist, incoming_topic, self.cmd_cb, 10)
-        self.timer = self.create_timer(0.1, self.control_loop)
+        self.control_timer = self.create_timer(0.1, self.control_loop)
+        self.status_timer = self.create_timer(1.0, self.check_flying)
 
         # Initialize variables
         self.is_flying = False
@@ -45,16 +48,31 @@ class ControlServices(Node):
 
         # Detect startup state (ground or mid-air)
         if init:
-            if self.current_pos.z > self.fly_threshold:
-                self.is_flying = True
+            self.is_flying = self.check_flying()
+            if self.is_flying:
                 self.desired_z = self.current_pos.z
                 self.get_logger().info(f"Startup Mid-Air ({self.current_pos.z:.2f}m). Engaging Height Hold.")
             else:
-                self.is_flying = False
                 self.get_logger().info("Startup on Ground. System IDLE.")
 
     def cmd_cb(self, msg: Twist):
         self.input_cmd = msg
+
+    def check_flying(self):
+        if self.current_pos is None:
+            return False
+
+        ground = self.current_pos.z < 0.01
+
+        if self.is_flying and ground:
+            self.get_logger().info("Ground contact detected -> Switch to IDLE")
+            self.land()
+
+        return not ground
+
+    def land(self):
+        self.is_flying = False
+        self.cmd_pub.publish(Twist())  # Cut motors
 
     def control_loop(self):
         if self.current_pos is None:
@@ -68,13 +86,12 @@ class ControlServices(Node):
             # Takeoff detection
             if user_z > 0:
                 # Fixed upward velocity until reaching a safe height, then switch to flying mode
-                safe_takeoff_height = 0.5
                 out_msg.linear.z = 0.5
                 out_msg.linear.x = 0.0
                 out_msg.linear.y = 0.0
                 out_msg.angular.z = 0.0
 
-                if self.current_pos.z > safe_takeoff_height:
+                if self.current_pos.z > self.safe_takeoff_height:
                     self.get_logger().info("Takeoff altitude reached -> Switch to FLYING")
                     self.is_flying = True
                     self.desired_z = self.current_pos.z
@@ -89,8 +106,7 @@ class ControlServices(Node):
             # Landing detection
             if user_z < 0 and self.current_pos.z < self.fly_threshold:
                 self.get_logger().info("Landing detected -> Switch to IDLE")
-                self.is_flying = False
-                self.cmd_pub.publish(Twist())  # Cut motors
+                self.land()
                 return
 
             # Z-axis control: manual or height hold
@@ -110,7 +126,7 @@ class ControlServices(Node):
         out_msg.linear.z = self.clamp(out_msg.linear.z, 2.0)
         out_msg.angular.x = self.input_cmd.angular.x
         out_msg.angular.y = self.input_cmd.angular.y
-        out_msg.angular.z = self.clamp(out_msg.angular.z, self.max_ang_z)
+        out_msg.angular.z = 0.0  # self.clamp(out_msg.angular.z, self.max_ang_z)
 
         self.cmd_pub.publish(out_msg)
 
