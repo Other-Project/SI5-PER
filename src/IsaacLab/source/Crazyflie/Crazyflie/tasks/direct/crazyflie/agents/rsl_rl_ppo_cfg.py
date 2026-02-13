@@ -11,7 +11,7 @@ from isaaclab_rl.rsl_rl import RslRlOnPolicyRunnerCfg, RslRlPpoActorCriticCfg, R
 @configclass
 class QuadcopterPPORunnerCfg(RslRlOnPolicyRunnerCfg):
     num_steps_per_env = 48
-    max_iterations = 400
+    max_iterations = 600
     save_interval = 50
     experiment_name = "quadcopter_direct"
     policy = RslRlPpoActorCriticCfg(

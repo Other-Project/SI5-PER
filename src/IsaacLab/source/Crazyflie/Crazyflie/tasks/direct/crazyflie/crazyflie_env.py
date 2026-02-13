@@ -130,8 +130,8 @@ class CrazyflieEnvCfg(DirectRLEnvCfg):
     landing_penalty_scale = -10.0
     action_penalty_scale = -0.01
     
-    landing_height_threshold = 0.04 
-    landing_radius = 0.02 
+    landing_height_threshold = 0.2
+    landing_radius = 0.06 
 
     # random pose range
     platform_spawn_range_xy = 4.0
@@ -142,7 +142,7 @@ class CrazyflieEnvCfg(DirectRLEnvCfg):
     platform_max_angular_velocity = 1.0  # rad/s
 
     # Curriculum learning parameters
-    curriculum_length_steps = 2400
+    curriculum_length_steps = 14400
     curriculum_easy_height = 0.3
     curriculum_hard_height = 3.0
 
@@ -156,6 +156,8 @@ class CrazyflieEnv(DirectRLEnv):
         self._actions = torch.zeros(self.num_envs, gym.spaces.flatdim(self.single_action_space), device=self.device)
         self._drone_target_lin_vel_b = torch.zeros(self.num_envs, 3, device=self.device)
         self._drone_target_ang_vel_b = torch.zeros(self.num_envs, 3, device=self.device)
+
+        self._is_dropping = torch.zeros(self.num_envs, dtype=torch.bool, device=self.device)
 
         # Platform wheel velocities for differential drive
         self._platform_wheel_vel = self._platform_wheel_vel = torch.zeros(self.num_envs, device=self.device)
@@ -287,13 +289,15 @@ class CrazyflieEnv(DirectRLEnv):
         height_error = root_pos_w[:, 2] - target_pos_w[:, 2]
         
         is_aligned = horizontal_dist < self.cfg.landing_radius
-        is_in_drop_zone = (height_error > 0.02) & (height_error < 0.20) 
-        is_asking_to_cut = self._actions[:, 2] < -0.5 
+        is_in_drop_zone = (height_error < self.cfg.landing_height_threshold)
+        is_asking_to_cut = self._actions[:, 2] < -0.8
         
-        cut_motor_mask = is_aligned & is_in_drop_zone & is_asking_to_cut
+        trigger_drop = is_aligned & is_in_drop_zone & is_asking_to_cut
         
-        forces_w[cut_motor_mask] = 0.0
-        torques_w[cut_motor_mask] = 0.0
+        self._is_dropping = self._is_dropping | trigger_drop
+        
+        forces_w[self._is_dropping] = 0.0
+        torques_w[self._is_dropping] = 0.0
 
         self._robot.set_external_force_and_torque(
             forces=forces_w.unsqueeze(1),
@@ -335,11 +339,21 @@ class CrazyflieEnv(DirectRLEnv):
         lin_vel = torch.sum(torch.square(root_lin_vel_b), dim=1)
         ang_vel = torch.sum(torch.square(root_ang_vel_b), dim=1)
         
-        distance_to_goal = torch.linalg.norm(target_pos_w - root_pos_w, dim=1)
-        
-        distance_to_goal_mapped = 1.0 / (1.0 + torch.square(distance_to_goal / 0.5))
-
         horizontal_dist = torch.linalg.norm(root_pos_w[:, :2] - target_pos_w[:, :2], dim=1)
+        
+        safe_transit_height = 1.0
+        
+        desired_z = target_pos_w[:, 2] + torch.clamp(horizontal_dist, min=0.0, max=safe_transit_height)
+        
+        virtual_target_w = target_pos_w.clone()
+        virtual_target_w[:, 2] = desired_z
+        
+        distance_to_virtual_goal = torch.linalg.norm(virtual_target_w - root_pos_w, dim=1)
+        distance_to_goal_mapped = 1.0 / (1.0 + torch.square(distance_to_virtual_goal / 0.5))
+
+        height_error_from_slope = torch.abs(root_pos_w[:, 2] - desired_z)
+        height_penalty = height_error_from_slope
+        
         on_top_of_target = horizontal_dist < self.cfg.landing_radius
         height_error = root_pos_w[:, 2] - target_pos_w[:, 2]
         height_penalty = height_error * on_top_of_target.float()
@@ -358,7 +372,7 @@ class CrazyflieEnv(DirectRLEnv):
             "distance_to_goal": distance_to_goal_mapped * self.cfg.distance_to_goal_reward_scale * self.step_dt,
             "height_penalty": height_penalty * self.cfg.height_penalty_scale * self.step_dt,
             "landing_reward": landing_reward * self.cfg.landing_reward_scale * self.step_dt,
-            "success_bonus": landed_successfully.float() * self.cfg.success_reward_scale
+            "success_bonus": landed_successfully * self.cfg.success_reward_scale
         }
         reward = torch.sum(torch.stack(list(rewards.values())), dim=0)
         # Logging
@@ -379,9 +393,9 @@ class CrazyflieEnv(DirectRLEnv):
         horizontal_dist = torch.linalg.norm(root_pos_w[:, :2] - target_pos_w[:, :2], dim=1)
         height_error = root_pos_w[:, 2] - target_pos_w[:, 2]
         
-        is_at_landing_height = torch.abs(height_error) < self.cfg.landing_height_threshold
+        is_at_landing_height = torch.abs(height_error) < 0.01
         is_aligned = horizontal_dist < (self.cfg.landing_radius / 2.0)
-        is_cutting_motors = self._actions[:, 2] < -0.8
+        is_cutting_motors = self._is_dropping
         
         landed_successfully = is_at_landing_height & is_aligned & is_cutting_motors
         
@@ -450,6 +464,7 @@ class CrazyflieEnv(DirectRLEnv):
         self._actions[env_ids] = 0.0
         self._drone_target_lin_vel_b[env_ids] = 0.0
         self._drone_target_ang_vel_b[env_ids] = 0.0
+        self._is_dropping[env_ids] = False
 
         # Sample new commands
         self._desired_pos_w[env_ids, :] = random_pos
@@ -459,15 +474,12 @@ class CrazyflieEnv(DirectRLEnv):
         
         default_root_state = self._robot.data.default_root_state[env_ids].clone()
         
-        max_steps = self.cfg.curriculum_length_steps
-        curriculum_factor = min(self.common_step_counter / max_steps, 1.0)
-        
         platform_z_location = self.cfg.platform_spawn_z 
         
         min_spawn_z = platform_z_location + self.cfg.curriculum_easy_height
         
         max_spawn_z_offset = self.cfg.curriculum_hard_height
-        current_max_z = min_spawn_z + curriculum_factor * (max_spawn_z_offset - self.cfg.curriculum_easy_height)
+        current_max_z = min_spawn_z + curr_factor * (max_spawn_z_offset - self.cfg.curriculum_easy_height)
         
         default_root_state[:, 2].uniform_(min_spawn_z, current_max_z)
     
@@ -475,7 +487,7 @@ class CrazyflieEnv(DirectRLEnv):
         
         easy_radius = 0.0
         hard_radius = self.cfg.platform_spawn_range_xy
-        current_radius = easy_radius + curriculum_factor * (hard_radius - easy_radius)
+        current_radius = easy_radius + curr_factor * (hard_radius - easy_radius)
         
         noise_xy = torch.zeros(len(env_ids), 2, device=self.device)
         noise_xy.uniform_(-current_radius, current_radius)
