@@ -126,6 +126,7 @@ class CrazyflieEnvCfg(DirectRLEnvCfg):
     distance_to_goal_reward_scale = 15.0
     height_penalty_scale = -5.0
     landing_reward_scale = 200.0
+    success_reward_scale = 2000.0
     landing_penalty_scale = -10.0
     action_penalty_scale = -0.01
     
@@ -142,7 +143,7 @@ class CrazyflieEnvCfg(DirectRLEnvCfg):
 
     # Curriculum learning parameters
     curriculum_length_steps = 2400
-    curriculum_easy_height = 0.2
+    curriculum_easy_height = 0.3
     curriculum_hard_height = 3.0
 
 class CrazyflieEnv(DirectRLEnv):
@@ -174,7 +175,8 @@ class CrazyflieEnv(DirectRLEnv):
                 "ang_vel",
                 "distance_to_goal",
                 "height_penalty",
-                "landing_reward"
+                "landing_reward",
+                "success_bonus"
             ]
         }
         # Get specific body indices
@@ -277,6 +279,21 @@ class CrazyflieEnv(DirectRLEnv):
         
         forces_w = quat_apply(root_quat, forces)
         torques_w = quat_apply(root_quat, torques)
+        
+        target_pos_w = self._desired_pos_w
+        root_pos_w = self._robot.data.root_pos_w
+        
+        horizontal_dist = torch.linalg.norm(root_pos_w[:, :2] - target_pos_w[:, :2], dim=1)
+        height_error = root_pos_w[:, 2] - target_pos_w[:, 2]
+        
+        is_aligned = horizontal_dist < self.cfg.landing_radius
+        is_in_drop_zone = (height_error > 0.02) & (height_error < 0.20) 
+        is_asking_to_cut = self._actions[:, 2] < -0.5 
+        
+        cut_motor_mask = is_aligned & is_in_drop_zone & is_asking_to_cut
+        
+        forces_w[cut_motor_mask] = 0.0
+        torques_w[cut_motor_mask] = 0.0
 
         self._robot.set_external_force_and_torque(
             forces=forces_w.unsqueeze(1),
@@ -329,15 +346,19 @@ class CrazyflieEnv(DirectRLEnv):
         
         is_at_landing_height = torch.abs(height_error) < self.cfg.landing_height_threshold
         is_aligned = horizontal_dist < (self.cfg.landing_radius / 2.0)
+        is_cutting_motors = thrust_action < -0.8
         
         landing_reward = (is_at_landing_height & is_aligned).float() * (1.0 - thrust_action)
+        
+        landed_successfully = is_at_landing_height & is_aligned & is_cutting_motors
                 
         rewards = {
             "lin_vel": lin_vel * self.cfg.lin_vel_reward_scale * self.step_dt,
             "ang_vel": ang_vel * self.cfg.ang_vel_reward_scale * self.step_dt,
             "distance_to_goal": distance_to_goal_mapped * self.cfg.distance_to_goal_reward_scale * self.step_dt,
             "height_penalty": height_penalty * self.cfg.height_penalty_scale * self.step_dt,
-            "landing_reward": landing_reward * self.cfg.landing_reward_scale * self.step_dt
+            "landing_reward": landing_reward * self.cfg.landing_reward_scale * self.step_dt,
+            "success_bonus": landed_successfully.float() * self.cfg.success_reward_scale
         }
         reward = torch.sum(torch.stack(list(rewards.values())), dim=0)
         # Logging
@@ -351,8 +372,20 @@ class CrazyflieEnv(DirectRLEnv):
 
         grav_b = self._robot.data.projected_gravity_b
         died_tilt = grav_b[:, 2].abs() < 0.5
-
-        died = torch.logical_or(died_pos, died_tilt)
+        
+        target_pos_w = self._desired_pos_w
+        root_pos_w = self._robot.data.root_pos_w
+        
+        horizontal_dist = torch.linalg.norm(root_pos_w[:, :2] - target_pos_w[:, :2], dim=1)
+        height_error = root_pos_w[:, 2] - target_pos_w[:, 2]
+        
+        is_at_landing_height = torch.abs(height_error) < self.cfg.landing_height_threshold
+        is_aligned = horizontal_dist < (self.cfg.landing_radius / 2.0)
+        is_cutting_motors = self._actions[:, 2] < -0.8
+        
+        landed_successfully = is_at_landing_height & is_aligned & is_cutting_motors
+        
+        died = died_pos | died_tilt | landed_successfully
 
         return died, time_out
 
