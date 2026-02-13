@@ -30,19 +30,7 @@ class ResetPos(Node):
         msg.position.z = min(msg.position.z, 5.0)
 
         req.pose = msg
-        future = self.client.call_async(req)
-        future.add_done_callback(self.callback_done)
-
-    def callback_done(self, future):
-        try:
-            response = future.result()
-            if response.success:
-                self.get_logger().info("The service responded 'success'")
-            else:
-                self.get_logger().warn("The service responded 'failure'")
-        except Exception as e:
-            self.get_logger().error(f"Service call failed: {e}")
-
+        self.client.call_async(req)
 
 def main(args=None):
     rclpy.init(args=args)
