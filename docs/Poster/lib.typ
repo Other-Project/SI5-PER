@@ -71,6 +71,7 @@
 #let placard(
   title: "Poster Title",
   authors: (),
+  prof: "",
   scheme: "light",
   paper: "a1", 
   num-columns: 2,
@@ -142,6 +143,7 @@
   _placard-styles.update(st)
 
   render-title(title)
+  align(center, text(size: 36pt, weight: "medium")[Encadrement: #prof])
   grid(
     columns: authors.map(_ => 1fr),
     gutter: 1em,
