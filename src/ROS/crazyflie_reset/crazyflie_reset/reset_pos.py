@@ -17,8 +17,7 @@ class ResetPos(Node):
         self.subscriber = self.create_subscription(Pose, "/crazyflie/set_pose", self.reset_pos_callback, 10)
 
     def reset_pos_callback(self, msg: Pose):
-        self.get_logger().info(
-            f"Received reset position command to ({msg.position.x:.2f}, {msg.position.y:.2f}, {msg.position.z:.2f})")
+        self.get_logger().info(f"Received reset position command to ({msg.position.x:.2f}, {msg.position.y:.2f}, {msg.position.z:.2f})")
 
         req = SetEntityPose.Request()
 

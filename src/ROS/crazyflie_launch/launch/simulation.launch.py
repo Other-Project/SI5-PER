@@ -47,22 +47,6 @@ def generate_launch_description():
         )
     )
 
-    # ld.add_action(Node(
-    #     package="alphabot2_position",
-    #     executable="position",
-    #     name="position",
-    #     output="screen",
-    #     parameters=[{"robot_prefix": "alphabot2"}],
-    # ))
-
-    # ld.add_action(Node(
-    #     package="crazyflie_position",
-    #     executable="position",
-    #     name="position",
-    #     output="screen",
-    #     parameters=[{"robot_prefix": "crazyflie"}],
-    # ))
-
     ld.add_action(
         Node(
             package="crazyflie_landing",
