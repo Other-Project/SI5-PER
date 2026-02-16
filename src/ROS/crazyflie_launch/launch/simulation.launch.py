@@ -72,10 +72,8 @@ def generate_launch_description():
             executable="control_services",
             output="screen",
             parameters=[
-                {"hover_height": 0.5},
                 {"robot_prefix": "/crazyflie"},
                 {"incoming_twist_topic": "/crazyflie/input_cmd_vel"},
-                {"max_ang_z_rate": 0.4},
             ],
         )
     )

@@ -125,7 +125,7 @@ class RLModelNode(LifecycleNode):
         desired_pos_b = target_pos_w - drone_pos_w
         target_lin_vel_b = self.vectToNumpy(self.current_twist.linear)
 
-        return np.concatenate([drone_lin_vel_b, drone_quat_w, desired_pos_b])  # , target_lin_vel_b])
+        return np.concatenate([drone_lin_vel_b, drone_quat_w, desired_pos_b, target_lin_vel_b])
 
     def control_loop(self):
         """Main loop: Observation -> Inference -> Action"""
