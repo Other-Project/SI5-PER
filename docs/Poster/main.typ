@@ -50,7 +50,7 @@
       Séquence d’atterrissage du drone autonome sur plateforme mobile
     ],
     grid(columns: 2, gutter: 2cm, align: left + horizon,
-    image("imgs/timeline.png", height: 15cm),
+    image("imgs/timeline.png", height: 12cm),
     [
       
       #legend("1", [Déclenchement de la procédure d'approche])
@@ -63,38 +63,35 @@
   \
 
   #columns(2, text(size: 1.2em)[
-    /* Ce projet porte sur le développement d’un système collaboratif permettant l’atterrissage autonome et précis d’un nano-drone sur une plateforme mobile. Il s’appuie sur une architecture distribuée sous ROS 2 Jazzy assurant la communication et la coordination entre un drone Crazyflie 2.1+ et un robot mobile.
+    Ce projet porte sur le développement d’un système collaboratif permettant l’atterrissage autonome et précis d’un nano-drone sur une plateforme mobile. Il s’appuie sur une architecture distribuée sous ROS 2 Jazzy assurant la communication et la coordination entre un drone Crazyflie 2.1+ et un robot mobile.
   
     #colbreak()
   
-    La stratégie de guidage et d’atterrissage est apprise à l’aide d’algorithmes de Deep Reinforcement Learning, entraînés dans des environnements de simulation réalistes basés sur NVIDIA IsaacSim et IsaacLab. Les modèles obtenus sont ensuite évalués dans Gazebo afin d’analyser le transfert entre simulateurs (sim2sim), puis déployés sur les systèmes réels pour étudier les écarts entre simulation et réalité (sim2real). */
+    La stratégie de guidage et d’atterrissage est apprise à l’aide d’algorithmes de Deep Reinforcement Learning, entraînés dans des environnements de simulation réalistes basés sur NVIDIA IsaacSim et IsaacLab. Les modèles obtenus sont ensuite évalués dans Gazebo afin d’analyser le transfert entre simulateurs (sim2sim), puis déployés sur les systèmes réels pour étudier les écarts entre simulation et réalité (sim2real).
 
-    - *Communication* drone Crazyflie–plateforme via ROS2 Jazzy
+    /* - *Communication* drone Crazyflie–plateforme via ROS2 Jazzy
     - Apprentissage du *guidage* et de l’*atterrissage* par Deep RL
 
     #colbreak()
     - Entraînement massivement *parallèle* avec NVIDIA Isaac Sim / Isaac Lab
     - Évaluation sous *Gazebo* pour analyser le *sim2sim* gap
-    - Déploiement réel pour mesurer l’écart simulation–réalité.
+    - Déploiement réel pour mesurer l’écart simulation–réalité. */
   ])
 ]
 
 #columns(2, gutter: 2em, [
   #card(title: "Problématique")[
-  L’atterrissage autonome d’un nano-drone sur plateforme mobile est une tâche difficile :
+  - Atterrissage autonome 
   - Cible mobile + estimation relative bruitée
   - Effets aérodynamiques (effet de sol, perturbations)
-  - *Sim2Real gap* : écarts entre simulation et réalité
+  - Sim2Real/Sim2Sim gap : écarts entre simulation et réalité
     (modélisation imparfaite, dynamiques divergentes, bruit capteurs)
-
-  → *Solution* : entraînement massif en simulateur,
-  puis validation progressive pour réduire le reality gap avant déploiement réel.
 ]
 
   
   #card(title: "Methodologie")[
 
-    Nous mettons en œuvre une chaîne de validation Sim2Sim2Real pour combler le reality gap inhérent à l'apprentissage par renforcement.
+    Nous mettons en œuvre une chaîne de validation Sim2Sim2Real pour combler le reality gap inhérent à l'apprentissage par renforcement en simulation.
     
     #figure(
       caption: [Workflow de travail],
@@ -120,14 +117,14 @@
     
   ]
 
-  
-
-  #card(title: "Problèmes")[
-    /* L’entraînement d’une stratégie de vol en simulation génère nécessairement des divergences par rapport au comportement réel, notamment en raison des différences de dynamique de vol et des perturbations aérodynamiques.
-    - *Solution* : considérer le simulateur comme une phase de transition servant à identifier ces écarts et à adapter le modèle pour en limiter l’impact lors du passage au système physique. */
+  #card(title: "Deep RL")[
+    - En simulation
+    - 4096 environnement en parallèles
+    - RSL-RL (PPO)
   ]
 
-  #card(title: "Solution")[
+  
+  #card(title: "Curriculum Learning")[
     
     #figure(
       caption: [ Étapes du Curriculum ],
@@ -152,10 +149,12 @@
   ]
 
   #card(title: "Résultats")[
-    #figure(image("imgs/results.png", width: 70%), caption: [Parcours du drone selon différentes simulations])
+    #figure(image("imgs/monitoring.png", height: 12cm), caption: [Parcours du drone selon différentes simulations])
   ]
-  
-  #card(title: "Perspectives")[
-  #lorem(20)
-  ]
+
+  #card(title: "Perspectives", [
+    - Passer en Manager-Based sur Isaac
+    - Domain Randomization
+    - LSTM
+  ])
 ])

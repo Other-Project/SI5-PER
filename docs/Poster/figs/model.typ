@@ -22,7 +22,11 @@
   _edge(<in_ang.east>, <model>, black),
   _edge(<in_distance.east>, <model>, black),
   
-  _node((1, 1), [Modèle IA], fill_color, <model>, height: 12em, width: 7em),
+  _node((1, 1), [Modèle IA 
+  
+  MLP 
+  
+  [256, 128, 64]], fill_color, <model>, height: 12em, width: 7em),
 
   _edge(<model>, <out_vel_lin.west>, black),
   _edge(<model>, <out_vel_ang.west>, black),
