@@ -28,8 +28,8 @@ def generate_launch_description():
             "spawn_crazyflie_gz.launch.py",
             "crazyflie",
             {
-                "x_pose": "0.5",
-                "y_pose": "0.5",
+                "x_pose": "1.5",
+                "y_pose": "2.5",
                 "z_pose": "2.0",
                 "z_angle": "0.0",
             },

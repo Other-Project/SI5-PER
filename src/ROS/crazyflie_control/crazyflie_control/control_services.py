@@ -13,11 +13,11 @@ class ControlServices(Node):
         # Declare and retrieve parameters
         self.declare_parameter("robot_prefix", "/crazyflie")
         self.declare_parameter("incoming_twist_topic", "/crazyflie/input_cmd_vel")
-        self.declare_parameter("max_linear", 0.25)
-        self.declare_parameter("max_ang_z_rate", 0.4)
+        self.declare_parameter("max_linear", 0.1)
+        self.declare_parameter("max_ang_z_rate", 0.05)
         self.declare_parameter("height_hold_gain", 1.0)
         self.declare_parameter("flying_threshold", 0.1)
-        self.declare_parameter("safe_takeoff_height", 0.5)
+        self.declare_parameter("safe_takeoff_height", 0.2)
 
         robot_prefix = self.get_parameter("robot_prefix").value
         incoming_topic = self.get_parameter("incoming_twist_topic").value
@@ -123,10 +123,10 @@ class ControlServices(Node):
             scale = self.max_linear / xy_mag
             out_msg.linear.x *= scale
             out_msg.linear.y *= scale
-        out_msg.linear.z = self.clamp(out_msg.linear.z, 2.0)
-        out_msg.angular.x = self.input_cmd.angular.x
-        out_msg.angular.y = self.input_cmd.angular.y
-        out_msg.angular.z = 0.0  # self.clamp(out_msg.angular.z, self.max_ang_z)
+        out_msg.linear.z = max(min(out_msg.linear.z, 1.0), -0.5)
+        out_msg.angular.x = 0.0
+        out_msg.angular.y = 0.0
+        out_msg.angular.z = self.clamp(out_msg.angular.z, self.max_ang_z)
 
         self.cmd_pub.publish(out_msg)
 
