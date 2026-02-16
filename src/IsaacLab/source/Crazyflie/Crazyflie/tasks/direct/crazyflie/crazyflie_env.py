@@ -51,7 +51,7 @@ class CrazyflieEnvCfg(DirectRLEnvCfg):
     episode_length_s = 15.0
     decimation = 2
     action_space = 4
-    observation_space = 10
+    observation_space = 13
     state_space = 0
     debug_vis = True
     test = False
