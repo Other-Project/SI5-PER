@@ -3,14 +3,7 @@ from setuptools import find_packages, setup
 package_name = "webots"
 data_files = []
 data_files.append(("share/ament_index/resource_index/packages", ["resource/" + package_name]))
-data_files.append(
-    (
-        "share/" + package_name + "/launch", [
-            "launch/robot_launch.py",
-            "launch/robot_launch_empty_world.py",
-        ],
-    )
-)
+data_files.append(("share/" + package_name + "/launch", ["launch/robot_launch.py"]))
 data_files.append(
     (
         "share/" + package_name + "/worlds",
@@ -18,6 +11,7 @@ data_files.append(
             "worlds/crazyflie_apartment.wbt",
             "worlds/.crazyflie_apartment.wbproj",
             "worlds/empty_landing.wbt",
+            "worlds/.empty_landing.wbproj",
         ],
     )
 )

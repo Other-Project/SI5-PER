@@ -1,6 +1,6 @@
 from setuptools import find_packages, setup
 
-package_name = "crazyflie_position"
+package_name = "crazyflie_reset"
 
 setup(
     name=package_name,
@@ -14,11 +14,14 @@ setup(
     zip_safe=True,
     maintainer="Evan Galli",
     maintainer_email="evan.galli@etu.univ-cotedazur.fr",
-    description="Position reporting node for Crazyflie",
+    description="Reset position node for crazyflie",
     license="MIT",
-    entry_points={
-        "console_scripts": [
-            "position = crazyflie_position.position:main",
+    extras_require={
+        "test": [
+            "pytest",
         ],
+    },
+    entry_points={
+        "console_scripts": ["reset_pos = crazyflie_reset.reset_pos:main"],
     },
 )

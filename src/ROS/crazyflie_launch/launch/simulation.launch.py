@@ -28,8 +28,8 @@ def generate_launch_description():
             "spawn_crazyflie_gz.launch.py",
             "crazyflie",
             {
-                "x_pose": "0.5",
-                "y_pose": "0.5",
+                "x_pose": "1.5",
+                "y_pose": "2.5",
                 "z_pose": "2.0",
                 "z_angle": "0.0",
             },
@@ -46,22 +46,6 @@ def generate_launch_description():
             },
         )
     )
-
-    # ld.add_action(Node(
-    #     package="alphabot2_position",
-    #     executable="position",
-    #     name="position",
-    #     output="screen",
-    #     parameters=[{"robot_prefix": "alphabot2"}],
-    # ))
-
-    # ld.add_action(Node(
-    #     package="crazyflie_position",
-    #     executable="position",
-    #     name="position",
-    #     output="screen",
-    #     parameters=[{"robot_prefix": "crazyflie"}],
-    # ))
 
     ld.add_action(
         Node(
@@ -88,10 +72,8 @@ def generate_launch_description():
             executable="control_services",
             output="screen",
             parameters=[
-                {"hover_height": 0.5},
                 {"robot_prefix": "/crazyflie"},
                 {"incoming_twist_topic": "/crazyflie/input_cmd_vel"},
-                {"max_ang_z_rate": 0.4},
             ],
         )
     )
@@ -106,6 +88,23 @@ def generate_launch_description():
     )
 
     ld.add_action(
+        IncludeLaunchDescription(
+            PythonLaunchDescriptionSource(
+                os.path.join(get_package_share_directory("crazyflie_description"), "launch", "robot_state_publisher.launch.py")
+            ),
+            launch_arguments={"use_sim_time": use_sim_time, "frame_prefix": "crazyflie"}.items(),
+        )
+    )
+
+    ld.add_action(
+        Node(
+            package="tf2_ros",
+            executable="static_transform_publisher",
+            arguments=["0", "0", "0", "0", "0", "0", "world", "alphabot2/base_footprint"],
+        )
+    )
+
+    ld.add_action(
         Node(
             package="crazyflie_control_manager",
             executable="crazyflie_control_manager",
@@ -113,16 +112,35 @@ def generate_launch_description():
         )
     )
 
-    # ld.add_action(
-    #     Node(
-    #         package="rviz2",
-    #         executable="rviz2",
-    #         name="rviz2",
-    #         output="screen",
-    #         parameters=[{"use_sim_time": use_sim_time}],
-    #         arguments=["-d", os.path.join(get_package_share_directory("ab2_gazebo"), "rviz", "ab2_gazebo.rviz")],
-    #     )
-    # )
+    # Service to reset drone pos
+    ld.add_action(
+        Node(
+            package="ros_gz_bridge",
+            executable="parameter_bridge",
+            name="ros_gz_bridge_service",
+            arguments=["/world/empty/set_pose@ros_gz_interfaces/srv/SetEntityPose"],
+            output="screen",
+        )
+    )
+
+    ld.add_action(
+        Node(
+            package="crazyflie_reset",
+            executable="reset_pos",
+            output="screen",
+        )
+    )
+
+    ld.add_action(
+        Node(
+            package="rviz2",
+            executable="rviz2",
+            name="rviz2",
+            output="screen",
+            parameters=[{"use_sim_time": use_sim_time}],
+            arguments=["-d", os.path.join(get_package_share_directory("crazyflie_launch"), "config", "config.rviz")],
+        )
+    )
 
     return ld
 

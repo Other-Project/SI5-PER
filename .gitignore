@@ -18,8 +18,3 @@
 
 # OS
 .DS_Store
-
-**/articles/**
-**/my_plans/**
-**/gazebo_bags/**
-**/isaac_sim_bags/**
