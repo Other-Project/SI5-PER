@@ -235,6 +235,21 @@ class CrazyflieEnv(DirectRLEnv):
 
         self.bridge.publish_command(self._drone_target_lin_vel_b[0], self._drone_target_ang_vel_b[0, 2])
 
+        d_pos = self._robot.data.root_pos_w[0]
+        d_quat = self._robot.data.root_quat_w[0]
+        d_lin_vel = self._robot.data.root_lin_vel_w[0]
+        d_ang_vel = self._robot.data.root_ang_vel_w[0]
+
+        p_pos = self._platform.data.root_pos_w[0]
+        p_quat = self._platform.data.root_quat_w[0]
+        p_lin_vel = self._platform.data.root_lin_vel_w[0]
+        p_ang_vel = self._platform.data.root_ang_vel_w[0]
+
+        self.bridge.publish_simulation_state(
+            d_pos, d_quat, d_lin_vel, d_ang_vel,
+            p_pos, p_quat, p_lin_vel, p_ang_vel
+        )
+
         rclpy.spin_once(self.bridge, timeout_sec=0.0)
 
     def _apply_action(self):

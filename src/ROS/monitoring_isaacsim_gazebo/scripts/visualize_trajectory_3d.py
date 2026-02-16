@@ -1,9 +1,10 @@
 import argparse
-import sys
 import os
+import sys
 
 import matplotlib.pyplot as plt
 import numpy as np
+
 
 def load_data(path):
     if not os.path.exists(path):
@@ -20,6 +21,7 @@ def main():
     parser = argparse.ArgumentParser(description="Visualize and compare 3D trajectories (Gazebo vs Webots).")
     parser.add_argument("--gazebo", type=str, help="Path to Gazebo .npz file")
     parser.add_argument("--webots", type=str, help="Path to Webots .npz file")
+    parser.add_argument("--isaac", type=str, help="Path to Isaac Sim .npz file ")
     args = parser.parse_args()
 
     files_map = {}
@@ -27,7 +29,9 @@ def main():
         files_map["Gazebo"] = args.gazebo
     if args.webots:
         files_map["Webots"] = args.webots
-    
+    if args.isaac:
+        files_map["Isaac Sim"] = args.isaac
+
     if not files_map:
         default_gazebo = "../.out/metrics/gazebo_trajectory.npz"
         default_webots = "../.out/metrics/webots_trajectory.npz"
@@ -49,8 +53,8 @@ def main():
     ax.set_ylabel("Y (m)")
     ax.set_zlabel("Z (m)")
 
-    colors = {"Gazebo": "orange", "Webots": "red"}
-    styles = {"Gazebo": "-", "Webots": "-"}
+    colors = {"Gazebo": "orange", "Webots": "red", "Isaac Sim": "blue"}
+    styles = {"Gazebo": "-", "Webots": "-", "Isaac Sim": "-"}
 
     all_x = []
     all_y = []
@@ -78,8 +82,8 @@ def main():
 
         # Plot Platform
         #TODO: plot both platform to check the departure point
-        ax.plot(platform_pos[:, 0], platform_pos[:, 1], platform_pos[:, 2],
-                label=f"{name} Platform", color=color, linestyle="--", linewidth=1, alpha=0.5)
+        # ax.plot(platform_pos[:, 0], platform_pos[:, 1], platform_pos[:, 2],
+        #         label=f"{name} Platform", color=color, linestyle="--", linewidth=1, alpha=0.5)
 
         all_x.extend(drone_pos[:, 0])
         all_y.extend(drone_pos[:, 1])
