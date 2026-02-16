@@ -88,6 +88,23 @@ def generate_launch_description():
     )
 
     ld.add_action(
+        IncludeLaunchDescription(
+            PythonLaunchDescriptionSource(
+                os.path.join(get_package_share_directory("crazyflie_description"), "launch", "robot_state_publisher.launch.py")
+            ),
+            launch_arguments={"use_sim_time": use_sim_time, "frame_prefix": "crazyflie"}.items(),
+        )
+    )
+
+    ld.add_action(
+        Node(
+            package="tf2_ros",
+            executable="static_transform_publisher",
+            arguments=["0", "0", "0", "0", "0", "0", "world", "alphabot2/base_footprint"],
+        )
+    )
+
+    ld.add_action(
         Node(
             package="crazyflie_control_manager",
             executable="crazyflie_control_manager",
@@ -114,16 +131,16 @@ def generate_launch_description():
         )
     )
 
-    # ld.add_action(
-    #     Node(
-    #         package="rviz2",
-    #         executable="rviz2",
-    #         name="rviz2",
-    #         output="screen",
-    #         parameters=[{"use_sim_time": use_sim_time}],
-    #         arguments=["-d", os.path.join(get_package_share_directory("ab2_gazebo"), "rviz", "ab2_gazebo.rviz")],
-    #     )
-    # )
+    ld.add_action(
+        Node(
+            package="rviz2",
+            executable="rviz2",
+            name="rviz2",
+            output="screen",
+            parameters=[{"use_sim_time": use_sim_time}],
+            arguments=["-d", os.path.join(get_package_share_directory("crazyflie_launch"), "config", "config.rviz")],
+        )
+    )
 
     return ld
 
