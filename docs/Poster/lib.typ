@@ -94,7 +94,7 @@
   let c = _default-themes.at(scheme) + colors 
   let f = _default-fonts + fonts
   let st = _default-styles + styles
-  let marg = (top: 3.5cm * scaling, bottom: 9cm * scaling, x: 2.5cm * scaling) + margin
+  let marg = (top: 3.5cm * scaling, bottom: 7cm * scaling, x: 2.5cm * scaling) + margin
 
   let base-s = _default-sizes + sizes
   let s = (:)
@@ -110,7 +110,7 @@
     footer: [
       #set text(font: f.footer, size: s.footer, fill: c.footer-text)
       #line(length: 100%, stroke: 2pt + c.accent)
-      #v(0.5em)
+      //#v(0.5em)
       #footer
     ],
   )
@@ -149,7 +149,7 @@
     gutter: 1em,
     ..authors.map(a => align(center, text(font: f.authors, size: s.authors, weight: "bold", a)))
   )
-  v(1.5em)
+  //v(1.5em)
 
   body
 }
