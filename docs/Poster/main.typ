@@ -1,5 +1,6 @@
 #import "lib.typ": card, placard
 #import "@preview/zebra:0.1.0": datamatrix, qrcode
+#import "@preview/larrow:1.0.0": *
 
 #set text(lang: "fr")
 
@@ -38,13 +39,26 @@
     authors: "EB Garamond"
   ),
   footer: grid(columns: (1fr, 1fr), align: (left + horizon, right + horizon),
-    image("imgs/uca.png", height: 5cm),
-    image("imgs/polytech.svg", height: 5cm)
+    image("imgs/uca.png", height: 3cm),
+    image("imgs/polytech.svg", height: 3cm)
   )
 )
 
+#context {
+place(left, dx: 0pt, dy: 10%, 
+      curve(
+      stroke: (thickness: 5pt, paint: gray, dash: (15pt, 15pt)),
+      curve.move((25%, 485pt)),
+      curve.line((25%, 550pt)),
+      curve.line((25%, 2100pt)),
+      curve.line((50%, 2100pt)),
+      curve.line((50%, 525pt)),
+      curve.line((75%, 525pt)),
+      curve.line((75%, 2000pt)),
+    )
+)
 
-#card(title: "Abstract")[
+card(title: "Abstract")[
   #figure(
     caption: [
       Séquence d’atterrissage du drone autonome sur plateforme mobile
@@ -79,19 +93,19 @@
   ])
 ]
 
-#columns(2, gutter: 2em, [
+block(columns(2, gutter: 2em, [
   #card(title: "Problématique")[
-  - Atterrissage autonome 
-  - Cible mobile + estimation relative bruitée
-  - Effets aérodynamiques (effet de sol, perturbations)
-  - Sim2Real/Sim2Sim gap : écarts entre simulation et réalité
-    (modélisation imparfaite, dynamiques divergentes, bruit capteurs)
+  Apprentissage en simulateur de séquences d'atterrissage pour un drone autonome sur cible mobile\
+  => Sim2Real : Quid de l'écart entre simulation et réalité
+    (modélisation imparfaite, dynamiques divergentes, bruit capteurs)\
+  //=> Estimation relative bruitée\
+  //=> Effets aérodynamiques (effet de sol, perturbations)
 ]
 
   
   #card(title: "Methodologie")[
 
-    Nous mettons en œuvre une chaîne de validation Sim2Sim2Real pour combler le reality gap inhérent à l'apprentissage par renforcement en simulation.
+    Nous mettons en œuvre une chaîne de validation Sim2Sim2Real pour mieux apprécier le reality gap inhérent à la simulation utilisée pour l'apprentissage.
     
     #figure(
       caption: [Workflow de travail],
@@ -105,29 +119,34 @@
       include("figs/model.typ")
     )
     
-    La politique de contrôle est optimisée pour assurer :
-    - La minimisation de la distance entre le drone et la plateforme.
-    - La régulation de la vitesse d'approche (pénalisation des vélocités excessives).
-    - Le respect des contraintes d'inclinaison et de l'altitude de sécurité.
-
-   /*  Le *Curriculum Learning * consiste à segmenter l'entraînement en niveaux de difficulté croissante. Cela guide l'agent vers la solution optimale sans qu'il ne se perde dans des minimums locaux.
-      - Phase 1 : *Stabilisation* (Vol stationnaire, maintien d'altitude).
-      - Phase 2 : *Cible Statique* (Atterrissage sur plateforme fixe, positions aléatoires).
-      - Phase 3 : *Cible Mobile* (Introduction progressive de la vitesse et de l'accélération de la plateforme). */
-    
   ]
 
-  #card(title: "Deep RL")[
-    - En simulation
-    - 4096 environnement en parallèles
-    - RSL-RL (PPO)
-  ]
+    #card(title: "Transfert Sim-to-Sim", [
+      - Bridge Isaac - ROS 
+      - Fonctionnement indépendant par exécution du modèle en *.onnx*
+    ]),
 
+#colbreak()
   
-  #card(title: "Curriculum Learning")[
+  #card(title: "Apprentissage par renforcement profond")[
+    - Minimisation de la distance entre le drone et la plateforme.
     
+    - Régulation de la vitesse d'approche (pénalisation des vélocités excessives).
+    
+    - Respect des contraintes d'inclinaison et de l'altitude de sécurité.
+    
+    - 4096 environnement en parallèle
+    
+    - RSL-RL (PPO)
+  
     #figure(
       caption: [ Étapes du Curriculum ],
+      alt: "
+        Le *Curriculum Learning * consiste à segmenter l'entraînement en niveaux de difficulté croissante. Cela guide l'agent vers la solution optimale sans qu'il ne se perde dans des minimums locaux.
+      - Phase 1 : *Stabilisation* (Vol stationnaire, maintien d'altitude).
+      - Phase 2 : *Cible Statique* (Atterrissage sur plateforme fixe, positions aléatoires).
+      - Phase 3 : *Cible Mobile* (Introduction progressive de la vitesse et de l'accélération de la plateforme). 
+      ",
       [
         #grid(columns: (1fr, 1fr, 1fr), gutter: 1cm, align: left + horizon,
           align(center)[
@@ -148,13 +167,22 @@
     )
   ]
 
-  #card(title: "Résultats")[
-    #figure(image("imgs/monitoring.png", height: 12cm), caption: [Parcours du drone selon différentes simulations])
-  ]
-
-  #card(title: "Perspectives", [
-    - Passer en Manager-Based sur Isaac
-    - Domain Randomization
-    - LSTM
+    #card(title: "Résultats", grid(columns: (3fr, 2fr), gutter: 2em, 
+      figure(image("imgs/monitoring.png", height: 12cm), caption: [Parcours du drone selon différentes simulations]),
+      align(horizon + center, box(fill: gray.lighten(90%), width: 100%, height: 13cm, pad(2cm)[TODO\ comparatif pour voir les variables qui changent le plus entre les trois simulateur]))
+    ))
+  
+  #card([
+    #text(font: "Permanent Marker", fill: rgb("#1a1a1a"), size: 35pt, weight: "semibold",  smallcaps(("Perspectives")))
+    #h(0.5em)
+    Passer en Manager-Based sur Isaac, Domain Randomization, LSTM 
   ])
-])
+]))
+
+
+  /*card([
+    #text(font: "Permanent Marker", fill:  rgb("#1a1a1a"), size: 35pt, weight: "semibold",  smallcaps([Perspectives]))
+    #h(0.5em)
+    Passer en Manager-Based sur Isaac, Domain Randomization, LSTM 
+  ])*/
+}
