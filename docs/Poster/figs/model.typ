@@ -1,7 +1,7 @@
 #import "@preview/fletcher:0.5.8" as fletcher: diagram, node, edge
 #import "../lib.typ": _default-themes
 
-#let _node(pos, label, tint, id, ..args) = node(pos, label, name: id, width: 9.5em,  ..args)
+#let _node(pos, label, tint, id, ..args) = node(pos, label, name: id, width: 12em,  ..args)
 #let _edge(from, to, tint, mark: "-|>", ..args) = edge(from, to, mark, ..args)
 #let _edge_txt(label, tint, ..args) = text(fill: tint.darken(30%), label, ..args)
 
