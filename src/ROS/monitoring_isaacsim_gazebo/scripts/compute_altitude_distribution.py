@@ -2,10 +2,20 @@ import numpy as np
 from rosbags.rosbag2 import Reader
 from rosbags.typesys import Stores, get_typestore
 
-bag_path = "../gazebo_bags/gazebo_run1"
+import argparse
+import sys
+
+DEFAULT_BAG = "../gazebo_bags/gazebo_run1"
 
 
 def main():
+    parser = argparse.ArgumentParser(description="Compute altitude distribution from ROS 2 bag.")
+    parser.add_argument("--bag", type=str, default=DEFAULT_BAG, help="Path to the input ROS 2 bag")
+    args = parser.parse_args()
+
+    bag_path = args.bag
+    print(f"Processing bag: {bag_path}")
+
     with Reader(bag_path) as reader:
         typestore = get_typestore(Stores.ROS2_JAZZY)
 
