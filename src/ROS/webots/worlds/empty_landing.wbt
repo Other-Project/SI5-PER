@@ -3,8 +3,8 @@
 EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2023b/projects/objects/backgrounds/protos/TexturedBackground.proto"
 EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2023b/projects/objects/lights/protos/CeilingLight.proto"
 EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2023b/projects/robots/bitcraze/crazyflie/protos/Crazyflie.proto"
-EXTERNPROTO "/home/aseko/Bureau/SI5-PER/src/ROS/webots/proto/Alphabot2.proto"
-EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2025a/projects/objects/floors/protos/Floor.proto"
+EXTERNPROTO "../proto/Alphabot2.proto"
+EXTERNPROTO "../protos/Floor.proto"
 
 WorldInfo {
   info [
@@ -14,8 +14,8 @@ WorldInfo {
   title "Crazyflie Apartment"
 }
 Viewpoint {
-  orientation -0.011478996516978167 0.026000719755919104 -0.999596016004034 5.4511929687784075
-  position -10.383624083407568 -8.98800520582247 1.1523089303257121
+  orientation -0.03027355823348744 -0.08430823181138392 0.9959797355974276 5.591062068904635
+  position -3.9657869062698987 4.318619779126275 1.5801081798955217
   exposure 0.5
   follow "Crazyflie"
 }
@@ -37,7 +37,7 @@ CeilingLight {
   pointLightIntensity 5
 }
 Crazyflie {
-  translation 0.5 0.5 2
+  translation 2.0 2.0 0
   controller "<extern>"
 }
 Alphabot2 {

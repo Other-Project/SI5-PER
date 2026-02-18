@@ -25,6 +25,7 @@ data_files.append(
     )
 )
 data_files.append(("share/" + package_name + "/proto", ["proto/Alphabot2.proto"]))
+data_files.append(("share/" + package_name + "/protos", ["protos/Floor.proto"]))
 data_files.append(
     (
         "share/" + package_name + "/meshes",

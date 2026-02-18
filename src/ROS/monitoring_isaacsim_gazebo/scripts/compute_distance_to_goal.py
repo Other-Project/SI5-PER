@@ -2,12 +2,31 @@ import numpy as np
 from rosbags.rosbag2 import Reader
 from rosbags.typesys import Stores, get_typestore
 
-bag_path = "../gazebo_bags/gazebo_run1"
-target_height = 0.1
+import argparse
+import sys
+
+DEFAULT_BAG = "../bag_gazebo/"
+DEFAULT_OUTPUT = "../.out/metrics/gazebo_trajectory.npz"
+target_height = 0.1 #TODO: i think this height has been changed in the simulation, make sure its applied everywhere
 
 
 def main():
+    parser = argparse.ArgumentParser(description="Compute distance to goal from ROS 2 bag.")
+    parser.add_argument("--bag", type=str, default=DEFAULT_BAG, help="Path to the input ROS 2 bag")
+    parser.add_argument("--output", type=str, default=DEFAULT_OUTPUT, help="Path to the output .npz file")
+    args = parser.parse_args()
+
+    bag_path = args.bag
+    output_file = args.output
+
+    print(f"Processing bag: {bag_path}")
+    print(f"Output file: {output_file}")
+
     with Reader(bag_path) as reader:
+        typestore = get_typestore(Stores.ROS2_JAZZY)
+
+        drone_positions = []
+        platform_positions = []
         typestore = get_typestore(Stores.ROS2_JAZZY)
 
         drone_positions = []
@@ -52,7 +71,7 @@ def main():
 
     distances = np.linalg.norm(np_drone_positions - target_positions, axis=1)
     print(f"\nDistances shape : {distances.shape}")
-    print(f"Distances : {distances}")
+    # print(f"Distances : {distances}")
 
     print(f"\n{'=' * 60}")
     print("Distance to the moving platform")
@@ -63,7 +82,7 @@ def main():
     print(f"  Std Deviation:        {np.std(distances):.4f} m")
     print(f"{'=' * 60}")
 
-    output_file = "../.out/metrics/gazebo_trajectory.npz"
+    # output_file = "../.out/metrics/gazebo_trajectory.npz" 
     np.savez(
         output_file,
         drone_positions=np_drone_positions,
