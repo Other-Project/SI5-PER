@@ -106,8 +106,9 @@ def main():
     ax2.grid(True, alpha=0.3, axis='y')
 
     plt.tight_layout()
-    os.makedirs("src/ROS/monitoring_sim2sim/.out/graph", exist_ok=True)
-    output = "src/ROS/monitoring_sim2sim/.out/graph/boxplots_comparison.png"
+    output_dir = os.path.join(_BASE_DIR, ".out", "graph")
+    os.makedirs(output_dir, exist_ok=True)
+    output = os.path.join(output_dir, "boxplots_comparison.png")
     plt.savefig(output, dpi=150, bbox_inches='tight')
     print(f"\nBoxplots saved to {output}")
 
