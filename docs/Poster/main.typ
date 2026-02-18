@@ -50,10 +50,10 @@ place(left, dx: 0pt, dy: 10%,
       curve(
       stroke: (thickness: 5pt, paint: gray, dash: (15pt, 15pt)),
       curve.move((25%, 485pt)),
-      curve.line((25%, 2125pt)),
-      curve.line((50%, 2125pt)),
-      curve.line((50%, 500pt)),
-      curve.line((75%, 500pt)),
+      curve.line((25%, 2200pt)),
+      curve.line((50%, 2200pt)),
+      curve.line((50%, 512.5pt)),
+      curve.line((75%, 512.5pt)),
       curve.line((75%, 2125pt)),
     )
 )
