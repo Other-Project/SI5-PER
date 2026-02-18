@@ -3,8 +3,8 @@
 EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2023b/projects/objects/backgrounds/protos/TexturedBackground.proto"
 EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2023b/projects/objects/lights/protos/CeilingLight.proto"
 EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2023b/projects/robots/bitcraze/crazyflie/protos/Crazyflie.proto"
-EXTERNPROTO "/home/aseko/Bureau/SI5-PER/src/ROS/webots/proto/Alphabot2.proto"
-EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2025a/projects/objects/floors/protos/Floor.proto"
+EXTERNPROTO "../proto/Alphabot2.proto"
+EXTERNPROTO "../protos/Floor.proto"
 
 WorldInfo {
   info [
@@ -37,7 +37,7 @@ CeilingLight {
   pointLightIntensity 5
 }
 Crazyflie {
-  translation 0.5 0.5 2
+  translation 2.0 2.0 0
   controller "<extern>"
 }
 Alphabot2 {
