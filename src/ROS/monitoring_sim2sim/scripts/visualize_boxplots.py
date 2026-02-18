@@ -6,10 +6,13 @@ from rosbags.rosbag2 import Reader
 from rosbags.typesys import Stores, get_typestore
 import os
 
+_SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+_BASE_DIR = os.path.join(_SCRIPT_DIR, "..")
+
 BAGS = {
-    "Isaac Sim": "src/ROS/monitoring_sim2sim/bag_isaac",
-    "Gazebo": "src/ROS/monitoring_sim2sim/bag_gazebo",
-    "Webots": "src/ROS/monitoring_sim2sim/bag_webots",
+    "Isaac Sim": os.path.join(_BASE_DIR, "bag_isaac"),
+    "Gazebo": os.path.join(_BASE_DIR, "bag_gazebo"),
+    "Webots": os.path.join(_BASE_DIR, "bag_webots"),
 }
 
 COLORS = {

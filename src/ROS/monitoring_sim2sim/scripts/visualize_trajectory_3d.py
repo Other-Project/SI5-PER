@@ -6,32 +6,21 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 
-def load_data(path):
-    if not os.path.exists(path):
-        print(f"Warning: File {path} not found.")
-        return None
-    data = np.load(path)
-    return {
-        "drone": data["drone_positions"],
-        "platform": data["platform_positions"],
-        "target": data["target_positions"]
-    }
-
 def main():
-    parser = argparse.ArgumentParser(description="Visualize and compare 3D trajectories (Gazebo vs Webots vs Isaac).")
+    parser = argparse.ArgumentParser(description="Visualize and compare 3D trajectories (Gazebo vs Webots vs Isaac Sim).")
     parser.add_argument("--gazebo", type=str, help="Path to Gazebo .npz file")
     parser.add_argument("--webots", type=str, help="Path to Webots .npz file")
     parser.add_argument("--isaac", type=str, help="Path to Isaac Sim .npz file")
     args = parser.parse_args()
 
     files_map = {}
+    if args.isaac:
+        files_map["Isaac Sim"] = args.isaac
     if args.gazebo:
         files_map["Gazebo"] = args.gazebo
     if args.webots:
         files_map["Webots"] = args.webots
-    if args.isaac:
-        files_map["Isaac Sim"] = args.isaac
-    
+
     if not files_map:
         default_gazebo = "src/ROS/monitoring_sim2sim/.out/metrics/gazebo_trajectory.npz"
         default_webots = "src/ROS/monitoring_sim2sim/.out/metrics/webots_trajectory.npz"
@@ -50,8 +39,14 @@ def main():
     fig = plt.figure(figsize=(10, 8))
     ax = fig.add_subplot(111, projection="3d")
 
-    colors = {"Gazebo": "yellow", "Webots": "red", "Isaac Sim": "blue"}
-    
+    ax.set_xlabel("X (m)")
+    ax.set_ylabel("Y (m)")
+    ax.set_zlabel("Z (m)")
+    ax.set_title("3D Trajectory Comparison (Gazebo vs Webots vs Isaac Sim)")
+
+    colors = {"Gazebo": "#FFB000", "Webots": "#DC267F", "Isaac Sim": "#785EF0"}
+    styles = {"Gazebo": "-", "Webots": "-", "Isaac Sim": "-"}
+
     all_x = []
     all_y = []
     all_z = []
@@ -60,7 +55,7 @@ def main():
         if not os.path.exists(file_path):
             print(f"File not found: {file_path}")
             continue
-            
+
         data = np.load(file_path)
         drone_pos = data["drone_positions"]
         platform_pos = data["platform_positions"]
@@ -70,49 +65,35 @@ def main():
             continue
 
         # Plot Drone Trajectory
-        ax.plot(
-            drone_pos[:, 0],
-            drone_pos[:, 1],
-            drone_pos[:, 2],
-            label=f"{label} Drone",
-            color=colors.get(label, "black"),
-            linewidth=2,
-        )
-        
-        # Plot Start/End markers
-        ax.scatter(
-            drone_pos[0, 0], drone_pos[0, 1], drone_pos[0, 2],
-            color=colors.get(label, "black"), marker="o", s=50, label=f"{label} Start"
-        )
-        ax.scatter(
-            drone_pos[-1, 0], drone_pos[-1, 1], drone_pos[-1, 2],
-            color=colors.get(label, "black"), marker="x", s=50, label=f"{label} End"
-        )
+        ax.plot(drone_pos[:, 0], drone_pos[:, 1], drone_pos[:, 2],
+                label=f"{label}", color=colors.get(label, "green"), linestyle=styles.get(label, "-"), linewidth=1.5, alpha=0.9)
 
+        # Start/End markers
+        ax.scatter(drone_pos[0, 0], drone_pos[0, 1], drone_pos[0, 2],
+                   color=colors.get(label, "green"), marker="o", facecolors="none", s=30)
+        ax.scatter(drone_pos[-1, 0], drone_pos[-1, 1], drone_pos[-1, 2],
+                   color=colors.get(label, "green"), marker="x", s=50)
+
+        # Platform trajectory
         ax.plot(
             platform_pos[:, 0],
             platform_pos[:, 1],
             platform_pos[:, 2],
             label=f"{label} Platform",
-            color=colors.get(label, "black"),
+            color=colors.get(label, "green"),
             linestyle="--",
             alpha=0.5
         )
-        
+
         all_x.extend(drone_pos[:, 0])
         all_y.extend(drone_pos[:, 1])
         all_z.extend(drone_pos[:, 2])
 
-    ax.set_xlabel("X [m]")
-    ax.set_ylabel("Y [m]")
-    ax.set_zlabel("Z [m]")
-    ax.set_title("3D Trajectory Comparison (Gazebo vs Webots vs Isaac)")
-    
     if all_x:
         all_x = np.array(all_x)
         all_y = np.array(all_y)
         all_z = np.array(all_z)
-        
+
         max_range = np.array([all_x.max() - all_x.min(), all_y.max() - all_y.min(), all_z.max() - all_z.min()]).max() / 2.0
         mid_x = (all_x.max() + all_x.min()) * 0.5
         mid_y = (all_y.max() + all_y.min()) * 0.5
@@ -124,9 +105,12 @@ def main():
 
     ax.legend()
     
-    os.makedirs(".out/graph", exist_ok=True)
-    output_img = ".out/graph/trajectory_comparison_3d.png"
-    plt.savefig(output_img)
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    output_dir = os.path.join(script_dir, "..", ".out", "graph")
+    os.makedirs(output_dir, exist_ok=True)
+    output_img = os.path.join(output_dir, "trajectory_comparison_3d.png")
+
+    plt.savefig(output_img, bbox_inches="tight")
     print(f"Plot saved to {output_img}")
 
 if __name__ == "__main__":
