@@ -94,7 +94,7 @@
   let c = _default-themes.at(scheme) + colors 
   let f = _default-fonts + fonts
   let st = _default-styles + styles
-  let marg = (top: 3.5cm * scaling, bottom: 7cm * scaling, x: 2.5cm * scaling) + margin
+  let marg = (top: 3.5cm * scaling, bottom: 7cm, x: 2.5cm * scaling) + margin
 
   let base-s = _default-sizes + sizes
   let s = (:)
@@ -181,6 +181,6 @@
         #body
       ],
     )
-    //v(if gap != none {gap} else {1em})
+    v(if gap != none {gap} else {1em})
   }
 }

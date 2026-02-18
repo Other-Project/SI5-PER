@@ -81,7 +81,7 @@ card(title: "Abstract")[
   
     #colbreak()
   
-    La stratégie de guidage et d’atterrissage est apprise à l’aide d’algorithmes de _Deep Reinforcement Learning_, entraînés dans des environnements de simulation réalistes basés sur NVIDIA IsaacSim et IsaacLab. Les modèles obtenus sont ensuite évalués dans Gazebo afin d’analyser le transfert entre simulateurs (_sim2sim_), puis déployés sur les systèmes réels pour étudier les écarts entre simulation et réalité (_sim2real_).
+    La stratégie de guidage et d’atterrissage est apprise à l’aide d’algorithmes de _Deep Reinforcement Learning_, entraînés dans des environnements de simulation réalistes basés sur NVIDIA IsaacSim et IsaacLab. Les modèles obtenus sont ensuite évalués dans Gazebo afin d’analyser le transfert entre simulateurs (_Sim2Sim_), puis déployés sur les systèmes réels pour étudier les écarts entre simulation et réalité (_Sim2Real_).
 
     /* - *Communication* drone Crazyflie–plateforme via ROS2 Jazzy
     - Apprentissage du *guidage* et de l’*atterrissage* par Deep RL
@@ -134,8 +134,7 @@ block(columns(2, gutter: 2em, [
     - Minimisation de la distance entre le drone et la plateforme
     - Régulation de la vitesse d'approche (pénalisation des vélocités excessives)
     - Respect des contraintes d'inclinaison et de l'altitude de sécurité
-    - 4096 environnements en parallèle
-    - RSL-RL (PPO)
+    - L'entraînement est réalisé sur 4096 environnements en parallèle via l'algorithme PPO (RSL-RL)
     
     #v(0.5em)
 
@@ -164,13 +163,13 @@ block(columns(2, gutter: 2em, [
             #legend("3", [Déplacement jusqu'à cible en mouvement et atterrissage])
           ]
         )
-        #v(1em)
+        #v(0.5em)
       ]
     )
   ]
 
     #card(title: "Résultats", grid(columns: (2fr, 3fr), gutter: 2em, align: horizon, 
-      figure(image("imgs/monitoring.png", height: 12cm), caption: [Parcours du drone selon\ différents simulateurs]),
+      figure(image("imgs/monitoring.png", width: 100%), caption: [Parcours du drone selon\ différents simulateurs]),
       /*figure(table(
         columns: (auto, 1fr, 1fr, 1fr),
         inset: (5pt, 10pt),
@@ -187,12 +186,23 @@ block(columns(2, gutter: 2em, [
         [Écart-type Vitesse], [*0.53 m/s*], [0.21 m/s \ (-0.32)], [0.61 m/s \ (+0.08)]
       ), caption: [Comparaison entre les simulations], kind: image),*/
       {
-        let gazebo = rgb("#FFA500")
-        let isaac = rgb("#0000FF")
+        
+        // IBM
+        let gazebo = rgb("#FFB000")
+        let isaac = rgb("#785EF0")
+        let webots = rgb("#DC267F")
+
+        // Okabe-Ito
+        /*let gazebo = rgb("#E69F00")
+        let isaac = rgb("#009E73")
+        let webots = rgb("#56B4E9")*/
+
+        
+        
       grid(rows: 2, gutter: 1em, 
       figure(caption: [Distribution des altitudes entre simulateurs], lq.diagram(
         width: 100%,
-        height: 200pt,
+        height: 250pt,
         legend: (position: top + left),
         xaxis: none,
         lq.boxplot(
@@ -200,7 +210,7 @@ block(columns(2, gutter: 2em, [
           lq.load-txt(read("metrics/altitude_isaac.csv"), header: true).Altitude,
           stroke: isaac + 2pt,
           fill: isaac.lighten(30%),
-          median: red + 2pt,
+          median: black + 2pt,
           outliers: none,
           label: "Isaac Sim"
         ),
@@ -209,9 +219,18 @@ block(columns(2, gutter: 2em, [
           lq.load-txt(read("metrics/altitude_gazebo.csv"), header: true).Altitude,
           stroke: gazebo + 2pt,
           fill: gazebo.lighten(30%),
-          median: red + 2pt,
+          median: black + 2pt,
           outliers: none,
           label: "Gazebo"
+        ),
+        lq.boxplot(
+          x: 3,
+          lq.load-txt(read("metrics/altitude_webots.csv"), header: true).Altitude,
+          stroke: webots + 2pt,
+          fill: webots.lighten(30%),
+          median: black + 2pt,
+          outliers: none,
+          label: "Webots"
         )
       )
     ),
@@ -219,13 +238,13 @@ block(columns(2, gutter: 2em, [
         width: 100%,
         height: 200pt,
         xaxis: none,
-        legend: none,//(position: top + right),
+        legend: (position: top + left),
         lq.boxplot(
           x: 1,
           lq.load-txt(read("metrics/speed_isaac.csv"), header: true).Speed,
           stroke: isaac + 2pt,
           fill: isaac.lighten(30%),
-          median: red + 2pt,
+          median: black + 2pt,
           outliers: none,
           label: "Isaac Sim"
         ),
@@ -234,16 +253,25 @@ block(columns(2, gutter: 2em, [
           lq.load-txt(read("metrics/speed_gazebo.csv"), header: true).Speed,
           stroke: gazebo + 2pt,
           fill: gazebo.lighten(30%),
-          median: red + 2pt,
+          median: black + 2pt,
           outliers: none,
           label: "Gazebo"
+        ),
+        lq.boxplot(
+          x: 3,
+          lq.load-txt(read("metrics/speed_webots.csv"), header: true).Speed,
+          stroke: webots + 2pt,
+          fill: webots.lighten(30%),
+          median: black + 2pt,
+          outliers: none,
+          label: "Webots"
         )
       )
     ))
   }
     ))
   
-  #card([
+  #card(gap: 0em, [
     #text(font: "Permanent Marker", fill: rgb("#1a1a1a"), size: 35pt, weight: "semibold",  smallcaps(("Perspectives")))
     #h(0.5em)
     Architecture Manager-Based, Domain Randomization et LSTM
