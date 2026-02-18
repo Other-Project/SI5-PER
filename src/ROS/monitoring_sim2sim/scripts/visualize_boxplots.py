@@ -7,8 +7,9 @@ from rosbags.typesys import Stores, get_typestore
 import os
 
 BAGS = {
-    "Isaac Sim": "src/ROS/monitoring_isaacsim_gazebo/bag_isaac",
-    "Gazebo": "src/ROS/monitoring_isaacsim_gazebo/bag_gazebo",
+    "Isaac Sim": "src/ROS/monitoring_sim2sim/bag_isaac",
+    "Gazebo": "src/ROS/monitoring_sim2sim/bag_gazebo",
+    "Webots": "src/ROS/monitoring_sim2sim/bag_webots",
 }
 
 COLORS = {
@@ -81,7 +82,7 @@ def main():
     ax1.set_title("Flight Altitude", fontsize=12)
     ax1.set_ylabel("Altitude (m)")
     ax1.grid(True, alpha=0.3, axis='y')
-    ax1.set_ylim(0.1, 0.5)
+    ax1.set_ylim(-0.1, 2.0)
 
     # Velocity Plot
     bp2 = ax2.boxplot(
@@ -102,7 +103,8 @@ def main():
     ax2.grid(True, alpha=0.3, axis='y')
 
     plt.tight_layout()
-    output = "boxplots_comparison.png"
+    os.makedirs("src/ROS/monitoring_sim2sim/.out/graph", exist_ok=True)
+    output = "src/ROS/monitoring_sim2sim/.out/graph/boxplots_comparison.png"
     plt.savefig(output, dpi=150, bbox_inches='tight')
     print(f"\nBoxplots saved to {output}")
 

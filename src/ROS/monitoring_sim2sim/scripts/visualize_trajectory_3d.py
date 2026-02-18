@@ -30,13 +30,12 @@ def main():
     if args.webots:
         files_map["Webots"] = args.webots
     if args.isaac:
-        files_map["Isaac"] = args.isaac
+        files_map["Isaac Sim"] = args.isaac
     
-    # Defaults if nothing provided
     if not files_map:
-        default_gazebo = "src/ROS/monitoring_isaacsim_gazebo/.out/metrics/gazebo_trajectory.npz"
-        default_webots = "src/ROS/monitoring_isaacsim_gazebo/.out/metrics/webots_trajectory.npz"
-        default_isaac = "src/ROS/monitoring_isaacsim_gazebo/.out/metrics/isaac_trajectory.npz"
+        default_gazebo = "src/ROS/monitoring_sim2sim/.out/metrics/gazebo_trajectory.npz"
+        default_webots = "src/ROS/monitoring_sim2sim/.out/metrics/webots_trajectory.npz"
+        default_isaac = "src/ROS/monitoring_sim2sim/.out/metrics/isaac_trajectory.npz"
         if os.path.exists(default_gazebo): files_map["Gazebo"] = default_gazebo
         if os.path.exists(default_webots): files_map["Webots"] = default_webots
         if os.path.exists(default_isaac): files_map["Isaac Sim"] = default_isaac
@@ -125,10 +124,10 @@ def main():
 
     ax.legend()
     
-    output_img = "trajectory_comparison_3d.png"
+    os.makedirs(".out/graph", exist_ok=True)
+    output_img = ".out/graph/trajectory_comparison_3d.png"
     plt.savefig(output_img)
     print(f"Plot saved to {output_img}")
-    # plt.show() 
 
 if __name__ == "__main__":
     main()
