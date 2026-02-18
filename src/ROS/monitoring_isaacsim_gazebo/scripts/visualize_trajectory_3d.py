@@ -25,12 +25,12 @@ def main():
     args = parser.parse_args()
 
     files_map = {}
+    if args.isaac:
+        files_map["Isaac Sim"] = args.isaac
     if args.gazebo:
         files_map["Gazebo"] = args.gazebo
     if args.webots:
         files_map["Webots"] = args.webots
-    if args.isaac:
-        files_map["Isaac Sim"] = args.isaac
 
     if not files_map:
         default_gazebo = "../.out/metrics/gazebo_trajectory.npz"
@@ -47,13 +47,11 @@ def main():
 
     fig = plt.figure(figsize=(10, 8))
     ax = fig.add_subplot(111, projection="3d")
-    
-    ax.set_title(f"Trajectory Comparison: {' vs '.join(files_map.keys())}", fontsize=14)
     ax.set_xlabel("X (m)")
     ax.set_ylabel("Y (m)")
     ax.set_zlabel("Z (m)")
 
-    colors = {"Gazebo": "orange", "Webots": "red", "Isaac Sim": "blue"}
+    colors = {"Gazebo": "#FFB000", "Webots": "#DC267F", "Isaac Sim": "#785EF0"}
     styles = {"Gazebo": "-", "Webots": "-", "Isaac Sim": "-"}
 
     all_x = []
@@ -71,19 +69,14 @@ def main():
         style = styles.get(name, "-")
         
         # Plot Drone
-        ax.plot(drone_pos[:, 0], drone_pos[:, 1], drone_pos[:, 2], 
-                label=f"{name} Drone", color=color, linestyle=style, linewidth=1.5, alpha=0.9)
-        
+        ax.plot(drone_pos[:, 0], drone_pos[:, 1], drone_pos[:, 2],
+                label=f"{name}", color=color, linestyle=style, linewidth=1.5, alpha=0.9)
+
         # Start/End markers
         ax.scatter(drone_pos[0, 0], drone_pos[0, 1], drone_pos[0, 2], 
                    color=color, marker="o", facecolors="none", s=30)
         ax.scatter(drone_pos[-1, 0], drone_pos[-1, 1], drone_pos[-1, 2], 
                    color=color, marker="x", s=50)
-
-        # Plot Platform
-        #TODO: plot both platform to check the departure point
-        # ax.plot(platform_pos[:, 0], platform_pos[:, 1], platform_pos[:, 2],
-        #         label=f"{name} Platform", color=color, linestyle="--", linewidth=1, alpha=0.5)
 
         all_x.extend(drone_pos[:, 0])
         all_y.extend(drone_pos[:, 1])
@@ -103,8 +96,7 @@ def main():
         ax.set_ylim(mid_y - max_range, mid_y + max_range)
         ax.set_zlim(mid_z - max_range, mid_z + max_range)
 
-    ax.legend()
-    
+    ax.legend(fontsize="xx-large", bbox_to_anchor=(1, 1.1), ncol=1)
     output_img = "trajectory_comparison_3d.png"
     plt.savefig(output_img)
     print(f"Plot saved to {output_img}")
