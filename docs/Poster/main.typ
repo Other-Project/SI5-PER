@@ -25,7 +25,7 @@
     [Komi Jean-Paul ASSIMPAH\ #text(size: 0.9em)[IoT-CPS]\ #mail("komi-jean-paul.assimpah@etu.univ-cotedazur.fr")], 
     [Alban FALCOZ\ #text(size: 0.9em)[IA-ID]\ #mail("alban.falcoz@etu.univ-cotedazur.fr")], 
     [Evan GALLI\ #text(size: 0.9em)[IoT-CPS]\ #mail("evan.galli@etu.univ-cotedazur.fr")], 
-    [Alexandre GRIPARI\ #text(size: 0.9em)[IA-ID]\ #mail("alexandre.gripari@etu.univ-cotedazur.fr")]
+    [Alexandre GRIPARI\ #text(size: 0.9em)[IA-ID]\ #mail("alexandre.gripariS@etu.univ-cotedazur.fr")]
   ),
   prof: [Gérald ROCHER - #text(size: 1.25em, mail("gerald.rocher@univ-cotedazur.fr"))],
   paper: "a0",
@@ -93,91 +93,99 @@ card(title: "Abstract")[
   ])
 ]
 
-block(columns(2, gutter: 2em, [
-  #card(title: "Problématique")[
-  Apprentissage en simulateur de séquences d'atterrissage pour un drone autonome sur cible mobile\
-  => Sim2Real : Quid de l'écart entre simulation et réalité
-    (modélisation imparfaite, dynamiques divergentes, bruit capteurs)\
-  //=> Estimation relative bruitée\
-  //=> Effets aérodynamiques (effet de sol, perturbations)
-]
-
+grid(
+  columns: (1fr, 1.4fr),
+  gutter: 2em,
+  [
+    #card(title: "Problématique")[
+      Apprentissage en simulateur de séquences d'atterrissage pour un drone autonome sur cible mobile\
+      => Sim2Real : Quid de l'écart entre simulation et réalité
+      (modélisation imparfaite, dynamiques divergentes, bruit capteurs)\
+    ]
   
-  #card(title: "Methodologie")[
-
-    Nous mettons en œuvre une chaîne de validation Sim2Sim2Real pour mieux apprécier le reality gap inhérent à la simulation utilisée pour l'apprentissage.
-    
-    #figure(
-      caption: [Workflow de travail],
-      include("figs/methodo.typ")
-    )
-
-    Ce flux de travail permet d'entraîner une politique de contrôle définie par les espaces d'observation et d'action ci-dessous.
-    
-    #figure(
-      caption: [Entrées et sorties du modèle],
-      include("figs/model.typ")
-    )
-    
-  ]
-
+    #card(title: "Methodologie")[
+      #figure(
+        caption: [Workflow de travail],
+        include("figs/methodo.typ")
+      )
+  
+      #v(0.5em)
+      
+      #figure(
+        caption: [Entrées et sorties du modèle],
+        include("figs/model.typ")
+      )
+    ]
+  
     #card(title: "Transfert Sim-to-Sim", [
       - Bridge Isaac - ROS 
       - Fonctionnement indépendant par exécution du modèle en *.onnx*
-    ]),
-
-#colbreak()
+    ])
+  ],
+  [
+    #card(title: "Apprentissage par renforcement profond")[
+      - Minimisation de la distance entre le drone et la plateforme.
+      
+      - Régulation de la vitesse d'approche (pénalisation des vélocités excessives).
+      
+      - Respect des contraintes d'inclinaison et de l'altitude de sécurité.
+      
+      - 4096 environnement en parallèle
+      
+      - RSL-RL (PPO)
+    
+      #figure(
+        caption: [ Étapes du Curriculum ],
+        alt: "
+          Le *Curriculum Learning * consiste à segmenter l'entraînement en niveaux de difficulté croissante. Cela guide l'agent vers la solution optimale sans qu'il ne se perde dans des minimums locaux.
+        - Phase 1 : *Stabilisation* (Vol stationnaire, maintien d'altitude).
+        - Phase 2 : *Cible Statique* (Atterrissage sur plateforme fixe, positions aléatoires).
+        - Phase 3 : *Cible Mobile* (Introduction progressive de la vitesse et de l'accélération de la plateforme). 
+        ",
+        [
+          #grid(columns: (1fr, 1fr, 1fr), gutter: 1cm, align: left + horizon,
+            align(center)[
+              #image("imgs/curriculum_learning_1.png", height: 5cm)
+              #legend("1", [Atterrissage sur\ cible statique])
+            ],
+            align(center)[
+              #image("imgs/curriculum_learning_2.png", height: 5cm)
+              #legend("2", [Déplacement jusqu'à\ cible statique et atterrissage])
+            ],
+            align(center)[
+              #image("imgs/curriculum_learning_3.png", height: 5cm)
+              #legend("3", [Déplacement jusqu'à cible en mouvement et atterrissage])
+            ]
+          )
+          #v(1em)
+        ]
+      )
+    ]
   
-  #card(title: "Apprentissage par renforcement profond")[
-    - Minimisation de la distance entre le drone et la plateforme.
-    
-    - Régulation de la vitesse d'approche (pénalisation des vélocités excessives).
-    
-    - Respect des contraintes d'inclinaison et de l'altitude de sécurité.
-    
-    - 4096 environnement en parallèle
-    
-    - RSL-RL (PPO)
-  
-    #figure(
-      caption: [ Étapes du Curriculum ],
-      alt: "
-        Le *Curriculum Learning * consiste à segmenter l'entraînement en niveaux de difficulté croissante. Cela guide l'agent vers la solution optimale sans qu'il ne se perde dans des minimums locaux.
-      - Phase 1 : *Stabilisation* (Vol stationnaire, maintien d'altitude).
-      - Phase 2 : *Cible Statique* (Atterrissage sur plateforme fixe, positions aléatoires).
-      - Phase 3 : *Cible Mobile* (Introduction progressive de la vitesse et de l'accélération de la plateforme). 
-      ",
-      [
-        #grid(columns: (1fr, 1fr, 1fr), gutter: 1cm, align: left + horizon,
-          align(center)[
-            #image("imgs/curriculum_learning_1.png", height: 8cm)
-            #legend("1", [Atterrissage sur\ cible statique])
-          ],
-          align(center)[
-            #box(height: 8cm, image("imgs/curriculum_learning_2.png", width: 100%))
-            #legend("2", [Déplacement jusqu'à\ cible statique et atterrissage])
-          ],
-          align(center)[
-            #image("imgs/curriculum_learning_3.png", height: 8cm)
-            #legend("3", [Déplacement jusqu'à cible en mouvement et atterrissage])
-          ]
-        )
-        #v(1em)
-      ]
-    )
-  ]
-
-    #card(title: "Résultats", grid(columns: (3fr, 2fr), gutter: 2em, 
-      figure(image("imgs/monitoring.png", height: 12cm), caption: [Parcours du drone selon différentes simulations]),
-      align(horizon + center, box(fill: gray.lighten(90%), width: 100%, height: 13cm, pad(2cm)[TODO\ comparatif pour voir les variables qui changent le plus entre les trois simulateur]))
+    #card(title: "Résultats", grid(columns: (0.8fr, 1.5fr), gutter: 1em, 
+      figure(image("imgs/monitoring.png", width:97%), caption: [Parcours du drone dans \ différentes simulateurs]),
+      align(horizon + center, box(fill: white, width: 100%, height: 13.5cm, inset: 0.2cm, align(horizon, text(size: 1.1em, table(
+        columns: (auto, 1fr, 1fr, 1fr),
+        inset: 12pt,
+        align: center + horizon,
+        fill: (col, row) => if row == 0 { gray.lighten(80%) } else if calc.even(row) { gray.lighten(95%) } else { none },
+        
+        [*Métrique*], [*Isaac (Réf)*], [*Gazebo (Gap)*], [*Webots (Gap)*],
+        
+        [Erreur Moyenne de Distance], [*0.26 m*], [0.52 m \ (+0.26)], [1.03 m \ (+0.77) ],
+        [Écart-type d'altitude], [*0.40 m*], [0.42 m \ (+0.02)], [0.66 m \ (+0.26) ],
+        [Vitesse Moyenne], [*0.20 m/s*], [0.04 m/s \ (-0.16)], [0.21 m/s \ (+0.01) ],
+        [Écart-type Vitesse], [*0.35 m/s*], [0.04 m/s \ (-0.31)], [0.20 m/s \ (-0.15)]
+      )))))
     ))
   
-  #card([
-    #text(font: "Permanent Marker", fill: rgb("#1a1a1a"), size: 35pt, weight: "semibold",  smallcaps(("Perspectives")))
-    #h(0.5em)
-    Passer en Manager-Based sur Isaac, Domain Randomization, LSTM 
-  ])
-]))
+    #card([
+      #text(font: "Permanent Marker", fill: rgb("#1a1a1a"), size: 35pt, weight: "semibold",  smallcaps(("Perspectives")))
+      #h(0.5em)
+      Passer en Manager-Based sur Isaac, Domain Randomization, LSTM 
+    ])
+  ]
+)
 
 
   /*card([
