@@ -62,7 +62,7 @@ def main():
     colors = [COLORS.get(l, "gray") for l in labels]
 
     fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(8, 10))
-    fig.suptitle("Distributions des Métriques de Vol dans les differentes simulations",
+    fig.suptitle("Flight Metrics Distribution across Simulations",
                  fontsize=14, fontweight='bold')
 
     # Altitude Plot
@@ -78,7 +78,7 @@ def main():
         patch.set_facecolor(color)
         patch.set_alpha(0.7)
 
-    ax1.set_title("Altitude de Vol", fontsize=12)
+    ax1.set_title("Flight Altitude", fontsize=12)
     ax1.set_ylabel("Altitude (m)")
     ax1.grid(True, alpha=0.3, axis='y')
     ax1.set_ylim(0.1, 0.5)
@@ -97,8 +97,8 @@ def main():
         patch.set_facecolor(color)
         patch.set_alpha(0.7)
 
-    ax2.set_title("Vitesse 3D", fontsize=12)
-    ax2.set_ylabel("Vitesse (m/s)")
+    ax2.set_title("3D Speed", fontsize=12)
+    ax2.set_ylabel("Speed (m/s)")
     ax2.grid(True, alpha=0.3, axis='y')
 
     plt.tight_layout()
