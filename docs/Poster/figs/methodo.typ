@@ -5,7 +5,7 @@
 #let _edge_txt(label, tint, ..args) = text(fill: tint.darken(30%), label, ..args)
 
 #let fill_color = _default-themes.light.paper-fill.saturate(50%).mix(black)
-#diagram(
+#pad(top: -1em, bottom: -0.5em, scale(82.5%, diagram(
   spacing: (20mm, 10mm),
   node-inset: 15pt,
   node-fill: fill_color.lighten(90%),
@@ -21,4 +21,4 @@
   edge("-|>", bend: -10deg),
   edge("<|-", bend: 10deg),
   _node((2, 0), [Déploiement réel], fill_color, <detect>),
-)
+)))

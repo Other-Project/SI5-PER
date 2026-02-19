@@ -4,10 +4,12 @@
 #import "@preview/lilaq:0.5.0" as lq
 
 #set text(lang: "fr")
+#show figure.caption: set text(size: 22pt)
 
 #let mail(mail, body: none) = text(size: 0.8em, fill: gray.darken(60%), link("mailto:" + mail, if body == none [#mail] else [#body]))
 #let legend(num, txt) = {
   show circle: box
+  set text(22pt)
   grid(columns: 2, column-gutter: 10pt, circle(align(horizon + center, num), inset: 1pt), txt)
 }
 
@@ -23,7 +25,7 @@
     #text(size: 76pt)[Systèmes collaboratifs pour le contrôle d’atterrissage d’un nano-drone sur plateforme mobile]
   ]),
   authors: (
-    [Komi Jean-Paul ASSIMPAH\ #text(size: 0.9em)[IoT-CPS]\ #mail("komi-jean-paul.assimpah@etu.univ-cotedazur.fr")], 
+    [Komi Jean Paul ASSIMPAH\ #text(size: 0.9em)[IoT-CPS]\ #mail("komi-jean-paul.assimpah@etu.univ-cotedazur.fr")], 
     [Alban FALCOZ\ #text(size: 0.9em)[IA-ID]\ #mail("alban.falcoz@etu.univ-cotedazur.fr")], 
     [Evan GALLI\ #text(size: 0.9em)[IoT-CPS]\ #mail("evan.galli@etu.univ-cotedazur.fr")], 
     [Alexandre GRIPARI\ #text(size: 0.9em)[IA-ID]\ #mail("alexandre.gripari@etu.univ-cotedazur.fr")]
@@ -49,16 +51,16 @@
 place(left, dx: 0pt, dy: 10%, 
       curve(
       stroke: (thickness: 5pt, paint: gray, dash: (15pt, 15pt)),
-      curve.move((25%, 485pt)),
-      curve.line((25%, 2200pt)),
-      curve.line((50%, 2200pt)),
-      curve.line((50%, 512.5pt)),
-      curve.line((75%, 512.5pt)),
-      curve.line((75%, 2125pt)),
+      curve.move((25%, 475pt)),
+      curve.line((25%, 2337.5pt)),
+      curve.line((50%, 2337.5pt)),
+      curve.line((50%, 490pt)),
+      curve.line((75%, 490pt)),
+      curve.line((75%, 2250pt)),
     )
 )
 
-card(title: "Abstract")[
+card(title: "Résumé")[
   #figure(
     caption: [
       Séquence d’atterrissage du drone autonome sur plateforme mobile
@@ -66,22 +68,25 @@ card(title: "Abstract")[
     grid(columns: 2, gutter: 2cm, align: left + horizon,
     image("imgs/timeline.png", height: 12cm),
     [
-      
-      #legend("1", [Déclenchement de la procédure d'approche])
-      #legend("2", [Estimation continue de la distance entre le drone et sa cible])
-      #legend("3", [Guidage par inférence du modèle neuronal (Deep RL)])
-      #legend("4", [Coupure des moteurs à basse altitude (mitigation de l'effet de sol)])
-      #legend("5", [Atterrissage finalisé])
+      #legend("1", text(24pt)[Déclenchement de la procédure d'approche])
+      #legend("2", text(24pt)[Estimation continue de la distance\ entre le drone et sa cible grâce à leur odométrie])
+      #legend("3", text(24pt)[Guidage par inférence du modèle neuronal (Deep RL)])
+      #legend("4", text(24pt)[Coupure des moteurs à basse altitude (mitigation de l'effet de sol)])
+      #legend("5", text(24pt)[Atterrissage finalisé])
     ]),
   )
-  \
 
-  #columns(2, text(size: 1.2em)[
-    Ce projet porte sur le développement d’un système collaboratif permettant l’atterrissage autonome et précis d’un nano-drone sur une plateforme mobile. Il s’appuie sur une architecture distribuée sous ROS 2 Jazzy assurant la communication et la coordination entre un drone Crazyflie 2.1+ et un robot mobile.
+  #v(0.25em)
+
+  #columns(2, [
+    /*Ce projet porte sur le développement d’un système collaboratif permettant l’atterrissage autonome et précis d’un nano-drone sur une plateforme mobile. Il s’appuie sur une architecture distribuée sous ROS 2 Jazzy assurant la communication et la coordination entre un drone Crazyflie 2.1+ et un robot mobile.
   
     #colbreak()
   
-    La stratégie de guidage et d’atterrissage est apprise à l’aide d’algorithmes de _Deep Reinforcement Learning_, entraînés dans des environnements de simulation réalistes basés sur NVIDIA IsaacSim et IsaacLab. Les modèles obtenus sont ensuite évalués dans Gazebo afin d’analyser le transfert entre simulateurs (_Sim2Sim_), puis déployés sur les systèmes réels pour étudier les écarts entre simulation et réalité (_Sim2Real_).
+    La stratégie de guidage et d’atterrissage est apprise à l’aide d’algorithmes de _Deep Reinforcement Learning_, entraînés dans des environnements de simulation réalistes basés sur NVIDIA IsaacSim et IsaacLab. Les modèles obtenus sont ensuite évalués dans Gazebo afin d’analyser le transfert entre simulateurs (_Sim2Sim_), puis déployés sur les systèmes réels pour étudier les écarts entre simulation et réalité (_Sim2Real_).*/
+    
+    Ce projet porte sur le développement d'un système collaboratif sous ROS 2 Jazzy, dédié à l'atterrissage autonome de précision d'un nano-drone (Crazyflie 2.1+) sur une plateforme mobile. La stratégie de guidage est élaborée par  _Deep Reinforcement Learning_ au sein des environnements NVIDIA IsaacSim et IsaacLab. #colbreak()
+    Les modèles obtenus sont ensuite évalués dans Gazebo afin d’analyser le transfert entre simulateurs (_Sim2Sim_), puis déployés sur les systèmes réels pour étudier les écarts entre simulation et réalité (_Sim2Real_).
 
     /* - *Communication* drone Crazyflie–plateforme via ROS2 Jazzy
     - Apprentissage du *guidage* et de l’*atterrissage* par Deep RL
@@ -93,13 +98,21 @@ card(title: "Abstract")[
   ])
 ]
 
+v(0.125em)
+
 block(columns(2, gutter: 2em, [
   #card(title: "Problématique")[
-  Apprentissage en simulateur de séquences d'atterrissage pour un drone autonome sur cible mobile\
-  → Comment réduire l'écart _"Sim2Real"_ entre simulation et réalité
-    (modélisation imparfaite,\ dynamiques divergentes, bruit capteurs)
+    #grid(columns: (5fr, auto), gutter: 0.5em, align: horizon, [
+  Apprentissage en simulateur de /*séquences d'atterrissage pour*/ l'atterrissage d'un drone autonome sur cible mobile\
+  → Comment réduire l'écart _"Sim2Real"_ entre simulation et réalité\
+    (modélisation imparfaite, dynamiques divergentes, bruit capteurs)
+  ],[
+  #figure(caption: "Crazyflie", image("crazyflie.png", height: 3.75cm))
+])
   //=> Estimation relative bruitée\
   //=> Effets aérodynamiques (effet de sol, perturbations)
+
+  
 ]
 
   
@@ -108,7 +121,7 @@ block(columns(2, gutter: 2em, [
     Nous mettons en œuvre une chaîne de validation _Sim2Sim2Real_ pour mieux apprécier le _reality gap_ inhérent à la simulation utilisée pour l'apprentissage.
     
     #figure(
-      caption: [Workflow de travail],
+      caption: [Workflow],
       include("figs/methodo.typ")
     )
 
@@ -118,7 +131,6 @@ block(columns(2, gutter: 2em, [
       caption: [Entrées et sorties du modèle],
       include("figs/model.typ")
     )
-    
   ]
 
     #card(title: "Environnement ROS 2", [
@@ -168,7 +180,7 @@ block(columns(2, gutter: 2em, [
     )
   ]
 
-    #card(title: "Résultats", grid(columns: (2fr, 3fr), gutter: 2em, align: horizon, 
+    #card(title: "Résultats", grid(columns: (3fr, 4fr), gutter: 2em, align: horizon, 
       figure(image("imgs/monitoring.png", width: 100%), caption: [Parcours du drone selon\ différents simulateurs]),
       /*figure(table(
         columns: (auto, 1fr, 1fr, 1fr),
@@ -197,12 +209,12 @@ block(columns(2, gutter: 2em, [
         let isaac = rgb("#009E73")
         let webots = rgb("#56B4E9")*/
 
-        
+        show lq.selector(lq.legend): set text(20pt)
         
       grid(rows: 2, gutter: 1em, 
       figure(caption: [Distribution des altitudes entre simulateurs], lq.diagram(
         width: 100%,
-        height: 250pt,
+        height: 275pt,
         legend: (position: top + left),
         xaxis: none,
         lq.boxplot(
@@ -270,18 +282,17 @@ block(columns(2, gutter: 2em, [
     ))
   }
     ))
-  
+
+  /*#card(title: [Perspectives], gap: 0em, [
+    Quantifier le _reality gap_ et identifier ses sources.
+  ])*/
+    
   #card(gap: 0em, [
-    #text(font: "Permanent Marker", fill: rgb("#1a1a1a"), size: 35pt, weight: "semibold",  smallcaps(("Perspectives")))
+    #text(font: "Permanent Marker", fill: rgb("#1a1a1a"), size: 39pt * 1.2, weight: "semibold",  smallcaps(("Perspectives")))
     #h(0.5em)
-    Architecture Manager-Based, Domain Randomization et LSTM
+    Quantifier le _reality gap_ et identifier ses sources
+    //Explorer une architecture Manager-Based, Domain Randomization et LSTM.
+    #v(0.1875em)
   ])
 ]))
-
-
-  /*card([
-    #text(font: "Permanent Marker", fill:  rgb("#1a1a1a"), size: 35pt, weight: "semibold",  smallcaps([Perspectives]))
-    #h(0.5em)
-    Passer en Manager-Based sur Isaac, Domain Randomization, LSTM 
-  ])*/
 }

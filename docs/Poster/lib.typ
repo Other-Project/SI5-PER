@@ -36,11 +36,11 @@
 // 
 #let _default-sizes = (
   title: 65pt,
-  authors: 22pt,
-  body: 20pt,
-  h1: 35pt,
+  authors: 26pt,
+  body: 24pt,
+  h1: 39pt,
   h2: 29pt,
-  card: 20pt,
+  card: 25pt,
   footer: 24pt,
 )
 
@@ -120,7 +120,7 @@
 
   let render-title(title-text) = [
     #set align(center)
-    #block(inset: (bottom: 1em))[
+    #block()[
     #set text(font: f.title, size: s.title, weight: "bold", fill: c.title)
     #if st.title-smallcaps { smallcaps(title-text) } else { title-text }
     ]
@@ -143,7 +143,7 @@
   _placard-styles.update(st)
 
   render-title(title)
-  align(center, text(size: 36pt, weight: "medium")[Encadrement: #prof])
+  pad(align(center, text(size: 36pt, weight: "medium")[Encadrement: #prof]))
   grid(
     columns: authors.map(_ => 1fr),
     gutter: 1em,
@@ -151,7 +151,7 @@
   )
   //v(1.5em)
 
-  body
+  pad(top:-0.5em, bottom: -1em, body)
 }
 
 // ------------------------------------------
@@ -169,7 +169,7 @@
     block(
       fill: card-bg,
       width: 100%,
-      inset: 2em, 
+      inset: 1.5em, 
       radius: 13pt,
       stroke: 2pt + card-stroke, 
       [
@@ -181,6 +181,6 @@
         #body
       ],
     )
-    v(if gap != none {gap} else {1em})
+    //v(if gap != none {gap} else {1em})
   }
 }

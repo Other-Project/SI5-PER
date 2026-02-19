@@ -6,7 +6,8 @@
 #let _edge_txt(label, tint, ..args) = text(fill: tint.darken(30%), label, ..args)
 
 #let fill_color = _default-themes.light.paper-fill.saturate(50%).mix(black)
-#diagram(
+#pad(top: -1.75em, bottom: -0.75em, scale(82.5%, [
+  #diagram(
   spacing: (35mm, 10mm),
   node-inset: 15pt,
   node-fill: fill_color.lighten(90%),
@@ -32,3 +33,6 @@
   _node((2, 0.5), [Vélocité linéaire\ (3 dimensions)], fill_color, <out_vel_lin>),
   _node((2, 1.5), [Vélocité angulaire\ (1 dimension)], fill_color, <out_vel_ang>),
 )
+
+#pad(top: -0.75em, bottom: -0.5em, x: -2.75em, grid(columns: (1fr, 1fr, 1fr), [Observations], [], [Actions]))
+]))
