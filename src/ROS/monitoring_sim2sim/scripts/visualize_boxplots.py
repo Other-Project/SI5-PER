@@ -6,9 +6,13 @@ from rosbags.rosbag2 import Reader
 from rosbags.typesys import Stores, get_typestore
 import os
 
+_SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+_BASE_DIR = os.path.join(_SCRIPT_DIR, "..")
+
 BAGS = {
-    "Isaac Sim": "src/ROS/monitoring_isaacsim_gazebo/bag_isaac",
-    "Gazebo": "src/ROS/monitoring_isaacsim_gazebo/bag_gazebo",
+    "Isaac Sim": os.path.join(_BASE_DIR, "bag_isaac"),
+    "Gazebo": os.path.join(_BASE_DIR, "bag_gazebo"),
+    "Webots": os.path.join(_BASE_DIR, "bag_webots"),
 }
 
 COLORS = {
@@ -81,7 +85,7 @@ def main():
     ax1.set_title("Flight Altitude", fontsize=12)
     ax1.set_ylabel("Altitude (m)")
     ax1.grid(True, alpha=0.3, axis='y')
-    ax1.set_ylim(0.1, 0.5)
+    ax1.set_ylim(-0.1, 2.0)
 
     # Velocity Plot
     bp2 = ax2.boxplot(
@@ -102,7 +106,9 @@ def main():
     ax2.grid(True, alpha=0.3, axis='y')
 
     plt.tight_layout()
-    output = "boxplots_comparison.png"
+    output_dir = os.path.join(_BASE_DIR, ".out", "graph")
+    os.makedirs(output_dir, exist_ok=True)
+    output = os.path.join(output_dir, "boxplots_comparison.png")
     plt.savefig(output, dpi=150, bbox_inches='tight')
     print(f"\nBoxplots saved to {output}")
 

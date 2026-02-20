@@ -84,6 +84,7 @@ class RLModelNode(LifecycleNode):
         self.current_pose = None
         self.current_twist = None
         self.target_pose = None
+        self.target_twist = None
 
         self._timer.reset()
 
@@ -106,6 +107,7 @@ class RLModelNode(LifecycleNode):
 
     def target_odometry_callback(self, msg: Odometry):
         self.target_pose = msg.pose.pose
+        self.target_twist = msg.twist.twist
 
     def vectToNumpy(self, vec: Vector3 | Point) -> np.ndarray:
         return np.array([vec.x, vec.y, vec.z])

@@ -239,15 +239,18 @@ class pid_velocity_fixed_height_controller:
     ):
         # Velocity PID control (converted from Crazyflie c code)
         gains = {
+            # Attitude gains (needed for stability)
             "kp_att_y": 1,
             "kd_att_y": 0.5,
             "kp_att_rp": 0.5,
             "kd_att_rp": 0.1,
+            # Velocity XY gains (needed to reach target)
             "kp_vel_xy": 2,
             "kd_vel_xy": 0.5,
-            "kp_z": 2,
-            "ki_z": 0.5,
-            "kd_z": 0.5,
+            # Altitude gains (heavily damped)
+            "kp_z": 7,
+            "ki_z": 2.0,
+            "kd_z": 5.0,
         }
 
         # Velocity PID control
@@ -264,7 +267,10 @@ class pid_velocity_fixed_height_controller:
         alt_error = desired_altitude - actual_altitude
         alt_deriv = (alt_error - self.past_alt_error) / dt
         self.altitude_integrator += alt_error * dt
-        alt_command = gains["kp_z"] * alt_error + gains["kd_z"] * alt_deriv + gains["ki_z"] * np.clip(self.altitude_integrator, -2, 2) + 48
+        
+        # Feedforward term (balanced stability vs reactivity)
+        # alt_command = gains["kp_z"] * alt_error + gains["kd_z"] * alt_deriv + gains["ki_z"] * np.clip(self.altitude_integrator, -5, 5) + 350
+        alt_command = gains["kp_z"] * alt_error + gains["kd_z"] * alt_deriv + gains["ki_z"] * np.clip(self.altitude_integrator, -2, 2) + 67
         self.past_alt_error = alt_error
 
         # Attitude PID control
