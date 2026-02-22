@@ -180,9 +180,9 @@ Parmi les algorithmes DRL couramment utilisés (PPO, TD3, DDPG), le **PPO** a é
 
 ## 3. Positionnement par rapport à l'existant
 
-**Choix algorithmique** — PPO est l'algorithme de référence pour le déploiement réel sur drones : stabilité accrue, moins d'oscillations, contrôle d'attitude cohérent (vs TD3 plus lent à converger, DDPG instable).
+**Choix algorithmique :** PPO est l'algorithme de référence pour le déploiement réel sur drones : stabilité accrue, moins d'oscillations, contrôle d'attitude cohérent (vs TD3 plus lent à converger, DDPG instable).
 
-**Curriculum Learning** — Une complexité croissante améliore la vitesse de convergence et la robustesse (Narvekar et al., 2020). Le *Prioritized Experience Replay* et le *Reverse Curriculum* sont les plus efficaces pour les UAV.
+**Curriculum Learning :** Une complexité croissante améliore la vitesse de convergence et la robustesse (Narvekar et al., 2020). Le *Prioritized Experience Replay* et le *Reverse Curriculum* sont les plus efficaces pour les UAV.
 
 **Réduction du Reality Gap :**
 - *Domain Randomization* : 28 % → 91 % de taux de succès réel sur atterrissage (Polvara et al., 2020)
@@ -190,7 +190,7 @@ Parmi les algorithmes DRL couramment utilisés (PPO, TD3, DDPG), le **PPO** a é
 - *Gestion de la latence* : historique des N dernières actions compense des délais >40 ms (DiAReL, Malmir et al., 2025)
 
 **Apports de ce projet :**
-- **Étude Sim2Sim explicite** : peu de travaux comparent IsaacSim et Gazebo en étape intermédiaire — le package `monitoring_sim2sim` quantifie ce gap
+- **Étude Sim2Sim explicite** : peu de travaux comparent IsaacSim et Gazebo en étape intermédiaire, le package `monitoring_sim2sim` quantifie ce gap
 - **Nano-drone collaboratif** : la littérature porte majoritairement sur des quadrotors standards ; le Crazyflie 2.1+ (29 g) impose des contraintes spécifiques (effet de sol amplifié, capteurs miniaturisés)
 - **Plateforme open-source reproductible** : code, documentation et scripts disponibles publiquement
 
@@ -218,7 +218,7 @@ Parmi les algorithmes DRL couramment utilisés (PPO, TD3, DDPG), le **PPO** a é
 - Modèle PPO entraîné pour atterrissage sur plateforme mobile
 - Script pour monitorer et valider le Sim2Sim pour IsaacSim, Gazebo, Webots
 
-- Documentation complète : [DoW](docs/DoW/), [État de l'art](docs/StateOfArt/), [Poster](docs/Poster/)
+- Documentation complète : [DoW](docs/DoW.pdf), [État de l'art](docs/StateOfArt.pdf), [Poster](docs/Poster.pdf)
 
 ---
 
@@ -235,8 +235,8 @@ La validation Sim2Sim compare le comportement de la politique PPO entraînée da
 
 | Simulateur | Altitude moyenne | Écart-type d' altitude | Vitesse moyenne | Écart-type vitesse | Durée | Atterrissage |
 |---|---|---|---|---|---|---|
-| IsaacSim | 0.27 m | ± 0.39 m | 0.50 m/s | ± 0.54 m/s | 52.3 s | Réussi (0.14 m) |
-| Gazebo | 0.35 m | ± 0.35 m | 0.22 m/s | ± 0.19 m/s | 48.4 s | Réussi (0.05 m) |
+| IsaacSim | 0.27 m | ± 0.39 m | 0.50 m/s | ± 0.54 m/s | 52.3 s | Réussi |
+| Gazebo | 0.35 m | ± 0.35 m | 0.22 m/s | ± 0.19 m/s | 48.4 s | Réussi |
 | Webots | 0.48 m | ± 0.61 m | 0.57 m/s | ± 0.42 m/s | 30.5 s | Non réussi |
 
 **IsaacSim** (environnement d'entraînement) présente une descente progressive sur 52 secondes depuis 2 m. La vitesse atteint des pics à 2.44 m/s lors des phases de correction, puis se stabilise à l'approche finale.
@@ -270,7 +270,7 @@ Les données brutes sont disponibles dans [`docs/Poster/metrics/`](docs/Poster/m
 - La pipeline Sim2Sim (avec `monitoring_sim2sim`) réduit le risque de casse matérielle en identifiant les dégradations avant les tests réels
 
 **Limitations :**
-- Webots n'a pas produit d'atterrissage réussi — la politique PPO ne se transfère pas dans ce simulateur sans adaptation des paramètres physiques
+- Webots n'a pas produit d'atterrissage réussi; la politique PPO ne se transfère pas dans ce simulateur sans adaptation des paramètres physiques
 - La dérive odométrique de la plateforme mobile reste une source d'erreur non corrigée
 - Les tests réels n'ont pas encore pu être effectués dans les délais du projet
 
@@ -321,7 +321,7 @@ Les données brutes sont disponibles dans [`docs/Poster/metrics/`](docs/Poster/m
     ```
     *(initialise les sous-modules git et installe les dépendances Python via `uv sync`)*
 
-Pour le déploiement sur **matériel réel** (AlphaBot2 + Raspberry Pi), utiliser `utils/install_deployed.sh` (Ubuntu Server 24.04).
+Pour le déploiement sur matériel réel (AlphaBot2 + Raspberry Pi), utiliser `utils/install_deployed.sh` (Ubuntu Server 24.04).
 
 ## Usage
 
@@ -332,7 +332,6 @@ Pour le déploiement sur **matériel réel** (AlphaBot2 + Raspberry Pi), utilise
 | `make build` | Compile tous les packages ROS 2 |
 | `make sim` | Lance la simulation Gazebo Harmonic |
 | `make sim_webots` | Lance la simulation Webots |
-| `make sim_carto` | Lance la simulation de cartographie |
 | `make isaac` | Lance l'entraînement/inférence IsaacLab |
 
 ### Téléopération manuelle
