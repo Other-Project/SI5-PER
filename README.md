@@ -345,16 +345,14 @@ Multirotor Uavs," Drones, vol. 8, no. 4, 2024.
 [^5]: F. Liu, T. Zhang, C. Zhang, L. Liu, L. Wang, and B. Liu, "A Review of the Evaluation System for Curriculum
 Learning," Electronics, vol. 12, no. 7, 2023.
 [^6]: J. Eßer, N. Bach, C. Jestel, O. Urbann, and S. Kerner, "Guided Reinforcement Learning: A Review and Evaluation for
-Efficient and Effective Real-World Robotics [Survey]," IEEE Robotics & Automation Magazine, vol. 30, no. 2, pp. 67-85,
-2023.
+Efficient and Effective Real-World Robotics [Survey]," IEEE Robotics & Automation Magazine, vol. 30, no. 2, pp. 67-85, 2023.
 [^7]: S. Narvekar et al., "Curriculum Learning for Reinforcement Learning Domains: A Framework and Survey," Journal of
 Machine Learning Research, vol. 21, no. 181, pp. 1-50, 2020.
 [^8]: X. Wang, Y. Chen, and W. Zhu, "A Survey on Curriculum Learning," IEEE Transactions on Pattern Analysis and Machine
 Intelligence, vol. 44, no. 9, pp. 4555-4576, 2022.
 [^9]: R. Portelas, C. Colas, L. Weng, K. Hofmann, and P.-Y. Oudeyer, "Automatic Curriculum Learning For Deep RL: A Short
 Survey," 2020.
-[^10]: D. Hanover et al., "Autonomous Drone Racing: A Survey," IEEE Transactions on Robotics, vol. 40, pp. 3044-3067,
-2024.
+[^10]: D. Hanover et al., "Autonomous Drone Racing: A Survey," IEEE Transactions on Robotics, vol. 40, pp. 3044-3067, 2024.
 [^14]: E. Salvato, G. Fenu, E. Medvet, and F. A. Pellegrino, "Crossing the Reality Gap: A Survey on Sim-to-Real
 Transferability of Robot Controllers in Reinforcement Learning," IEEE Access, vol. 9, pp. 153171-153187, 2021.
 [^15]: R. Polvara, M. Patacchiola, M. Hanheide, and G. Neumann, "Sim-to-Real Quadrotor Landing via Sequential Deep
