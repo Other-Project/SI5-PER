@@ -26,12 +26,6 @@ sim_webots: build
 	. .out/ros_install/setup.sh && \
 		ros2 launch crazyflie_launch simulation_webots.launch.py
 
-sim_carto: build
-	export PYTHONPATH='src/ROS/.venv/lib/python3.12/site-packages' && \
-	. src/ROS/.venv/bin/activate && \
-	. .out/ros_install/setup.sh && \
-		ros2 launch crazyflie_launch cartography_simulation.launch.py
-
 teleop_drone:
 	. /opt/ros/*/setup.sh && \
 		ros2 topic pub -1 /crazyflie/land std_msgs/Bool "data: False" 
