@@ -124,15 +124,15 @@ class RLModelNode(LifecycleNode):
 
         drone_pos_w = self.vectToNumpy(self.current_pose.position)
         target_pos_w = self.vectToNumpy(self.target_pose.position)
-        target_pos_w[2] += 0.1
+        target_pos_w[2] += 0.053
         return target_pos_w - drone_pos_w
 
-    def _is_arrived(self, tolerance=0.01):
+    def _is_arrived(self, tolerance=0.1, z_tolerance=0.1):
         vect_to_target = self._get_vect_to_target()
         if vect_to_target is None:
             return False
-        distance = np.linalg.norm(vect_to_target)
-        return distance < tolerance
+        distance = np.linalg.norm(vect_to_target[:2])
+        return distance < tolerance and abs(vect_to_target[2]) < z_tolerance
 
     def _build_observation_vector(self):
         if self.current_pose is None or self.current_twist is None or self.target_pose is None:
@@ -151,9 +151,9 @@ class RLModelNode(LifecycleNode):
         arrived = self._is_arrived()
         if arrived:
             self.get_logger().info("Arrived at target position. Disabling automated control.")
-            msg = Twist()
-            msg.linear.z = -0.5
-            self._robot_cmd_pub.publish(msg)
+            twist_msg = Twist()
+            twist_msg.linear.z = -0.5
+            self._robot_cmd_pub.publish(twist_msg)
             self._land_pub.publish(Bool(data=False))  # Deactivate landing mode
             return
 

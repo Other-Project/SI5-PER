@@ -131,22 +131,22 @@ def generate_launch_description():
         )
     )
 
-    ld.add_action(
-        Node(
-            package="rviz2",
-            executable="rviz2",
-            name="rviz2",
-            output="screen",
-            parameters=[{"use_sim_time": use_sim_time}],
-            arguments=[
-                "-d",
-                os.path.join(get_package_share_directory("crazyflie_launch"), "config", "config.rviz"),
-                "--ros-args",
-                "--log-level",
-                "warn",
-            ],
-        )
-    )
+    # ld.add_action(
+    #     Node(
+    #         package="rviz2",
+    #         executable="rviz2",
+    #         name="rviz2",
+    #         output="screen",
+    #         parameters=[{"use_sim_time": use_sim_time}],
+    #         arguments=[
+    #             "-d",
+    #             os.path.join(get_package_share_directory("crazyflie_launch"), "config", "config.rviz"),
+    #             "--ros-args",
+    #             "--log-level",
+    #             "warn",
+    #         ],
+    #     )
+    # )
 
     return ld
 

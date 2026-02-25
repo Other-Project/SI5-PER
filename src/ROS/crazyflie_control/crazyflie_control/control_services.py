@@ -16,7 +16,7 @@ class ControlServices(Node):
         self.declare_parameter("max_linear", 0.1)
         self.declare_parameter("max_ang_z_rate", 0.05)
         self.declare_parameter("height_hold_gain", 1.0)
-        self.declare_parameter("flying_threshold", 0.15)
+        self.declare_parameter("flying_threshold", 0.2)
         self.declare_parameter("max_height", 3.0)
         self.declare_parameter("safe_takeoff_height", 0.2)
 
@@ -86,17 +86,16 @@ class ControlServices(Node):
 
         if not self.is_flying:
             # Takeoff detection
-            if user_z > 0:
+            if self.current_pos.z > self.safe_takeoff_height:
+                self.get_logger().info("Takeoff altitude reached -> Switch to FLYING")
+                self.is_flying = True
+                self.desired_z = self.current_pos.z
+            elif user_z > 0:
                 # Fixed upward velocity until reaching a safe height, then switch to flying mode
                 out_msg.linear.z = 0.5
                 out_msg.linear.x = 0.0
                 out_msg.linear.y = 0.0
                 out_msg.angular.z = 0.0
-
-                if self.current_pos.z > self.safe_takeoff_height:
-                    self.get_logger().info("Takeoff altitude reached -> Switch to FLYING")
-                    self.is_flying = True
-                    self.desired_z = self.current_pos.z
         else:
             # Pass through XY/Yaw commands
             out_msg.linear.x = self.input_cmd.linear.x
