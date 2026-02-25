@@ -16,7 +16,8 @@ class ControlServices(Node):
         self.declare_parameter("max_linear", 0.1)
         self.declare_parameter("max_ang_z_rate", 0.05)
         self.declare_parameter("height_hold_gain", 1.0)
-        self.declare_parameter("flying_threshold", 0.1)
+        self.declare_parameter("flying_threshold", 0.5)
+        self.declare_parameter("max_height", 3.0)
         self.declare_parameter("safe_takeoff_height", 0.5)
 
         robot_prefix = self.get_parameter("robot_prefix").value
@@ -25,6 +26,7 @@ class ControlServices(Node):
         self.max_ang_z = self.get_parameter("max_ang_z_rate").value
         self.kp_z = self.get_parameter("height_hold_gain").value
         self.fly_threshold = self.get_parameter("flying_threshold").value
+        self.max_height = self.get_parameter("max_height").value
         self.safe_takeoff_height = self.get_parameter("safe_takeoff_height").value
 
         # Setup communication
@@ -108,6 +110,9 @@ class ControlServices(Node):
                 self.get_logger().info("Landing detected -> Switch to IDLE")
                 self.land()
                 return
+
+            if user_z > 0 and self.current_pos.z > self.max_height:
+                user_z = 0.0  # Override user command to prevent further ascent
 
             # Z-axis control: manual or height hold
             if abs(user_z) > tolerance:
