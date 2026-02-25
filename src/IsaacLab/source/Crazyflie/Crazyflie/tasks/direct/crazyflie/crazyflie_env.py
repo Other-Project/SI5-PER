@@ -126,12 +126,13 @@ class CrazyflieEnvCfg(DirectRLEnvCfg):
     distance_to_goal_reward_scale = 15.0
     height_penalty_scale = -5.0
     landing_reward_scale = 200.0
-    success_reward_scale = 2000.0
+    success_reward_scale = 200.0
     landing_penalty_scale = -10.0
     action_penalty_scale = -0.01
     
     landing_height_threshold = 0.4
-    landing_radius = 0.06 
+    landing_radius = 0.06
+    approach_radius = 0.5
 
     # random pose range
     drone_spawn_range_xy = 4.0
@@ -142,7 +143,7 @@ class CrazyflieEnvCfg(DirectRLEnvCfg):
     platform_max_angular_velocity = 1.0  # rad/s
 
     # Curriculum learning parameters
-    curriculum_length_steps = 14400
+    curriculum_length_steps = 7680
     curriculum_easy_height = 0.5
     curriculum_hard_height = 3.0
 
@@ -160,7 +161,7 @@ class CrazyflieEnv(DirectRLEnv):
         self._is_dropping = torch.zeros(self.num_envs, dtype=torch.bool, device=self.device)
 
         # Platform wheel velocities for differential drive
-        self._platform_wheel_vel = self._platform_wheel_vel = torch.zeros(self.num_envs, device=self.device)
+        self._platform_wheel_vel = torch.zeros(self.num_envs, device=self.device)
         self._platform_joint_indices = None
 
         # Platform target velocities (linear and angular)
@@ -168,6 +169,7 @@ class CrazyflieEnv(DirectRLEnv):
 
         # Goal position (platform center)
         self._desired_pos_w = torch.zeros(self.num_envs, 3, device=self.device)
+        self._virtual_target_w = torch.zeros(self.num_envs, 3, device=self.device)
 
         # Logging
         self._episode_sums = {
@@ -248,8 +250,7 @@ class CrazyflieEnv(DirectRLEnv):
         acc_w = quat_apply(root_quat, acc_b)
         
         total_force_w = acc_w * mass
-        thrust_command = self._actions[:, 2] 
-        total_force_w[:, 2] += mass * 9.81 * torch.clamp(thrust_command + 1.0, min=0.0, max=1.0)
+        total_force_w[:, 2] += mass * 9.81
 
         # Attitude Controller
         z_axis_b = torch.zeros_like(total_force_w)
@@ -341,25 +342,25 @@ class CrazyflieEnv(DirectRLEnv):
         
         horizontal_dist = torch.linalg.norm(root_pos_w[:, :2] - target_pos_w[:, :2], dim=1)
         
-        safe_transit_height = 1.0
+        safe_transit_height = 2.0
         
         desired_z = target_pos_w[:, 2] + torch.clamp(horizontal_dist, min=self.cfg.landing_height_threshold, max=safe_transit_height)
         
-        virtual_target_w = target_pos_w.clone()
-        virtual_target_w[:, 2] = desired_z
+        self._virtual_target_w = target_pos_w.clone()
+        self._virtual_target_w[:, 2] = desired_z
         
-        distance_to_virtual_goal = torch.linalg.norm(virtual_target_w - root_pos_w, dim=1)
+        distance_to_virtual_goal = torch.linalg.norm(self._virtual_target_w - root_pos_w, dim=1)
         distance_to_goal_mapped = 1.0 / (1.0 + torch.square(distance_to_virtual_goal / 0.5))
 
         height_error_from_slope = torch.abs(root_pos_w[:, 2] - desired_z)
         height_penalty = height_error_from_slope
         
-        on_top_of_target = horizontal_dist < self.cfg.landing_radius
+        near_target = horizontal_dist < self.cfg.approach_radius
         height_error = root_pos_w[:, 2] - target_pos_w[:, 2]
         
-        height_penalty = torch.where(on_top_of_target, height_error, height_penalty)
+        height_penalty = torch.where(near_target, height_error, height_penalty)
         
-        is_at_landing_height = height_error < (self.cfg.landing_height_threshold + 0.05)
+        is_at_landing_height = height_error < self.cfg.landing_height_threshold
         is_aligned = horizontal_dist < (self.cfg.landing_radius / 2.0)
         is_cutting_motors = thrust_action < -0.8
         
@@ -509,12 +510,26 @@ class CrazyflieEnv(DirectRLEnv):
                 # -- goal pose
                 marker_cfg.prim_path = "/Visuals/Command/goal_position"
                 self.goal_pos_visualizer = VisualizationMarkers(marker_cfg)
+
+            if not hasattr(self, "virtual_target_visualizer"):
+                virtual_marker_cfg = CUBOID_MARKER_CFG.copy()
+                virtual_marker_cfg.markers["cuboid"].size = (0.02, 0.02, 0.02)
+                virtual_marker_cfg.markers["cuboid"].visual_material = sim_utils.PreviewSurfaceCfg(
+                    diffuse_color=(0.0, 1.0, 0.0))
+                # -- virtual target pose
+                virtual_marker_cfg.prim_path = "/Visuals/Command/virtual_position"
+                self.virtual_target_visualizer = VisualizationMarkers(virtual_marker_cfg)
+
             # set their visibility to true
             self.goal_pos_visualizer.set_visibility(True)
+            self.virtual_target_visualizer.set_visibility(True)
         else:
             if hasattr(self, "goal_pos_visualizer"):
                 self.goal_pos_visualizer.set_visibility(False)
+            if hasattr(self, "virtual_target_visualizer"):
+                self.virtual_target_visualizer.set_visibility(False)
 
     def _debug_vis_callback(self, event):
         # update the markers
+        self.virtual_target_visualizer.visualize(self._virtual_target_w)
         self.goal_pos_visualizer.visualize(self._desired_pos_w)
