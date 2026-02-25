@@ -18,7 +18,7 @@ class ControlServices(Node):
         self.declare_parameter("height_hold_gain", 1.0)
         self.declare_parameter("flying_threshold", 0.15)
         self.declare_parameter("max_height", 3.0)
-        self.declare_parameter("safe_takeoff_height", 0.3)
+        self.declare_parameter("safe_takeoff_height", 0.2)
 
         robot_prefix = self.get_parameter("robot_prefix").value
         incoming_topic = self.get_parameter("incoming_twist_topic").value
@@ -33,7 +33,7 @@ class ControlServices(Node):
         self.cmd_pub = self.create_publisher(Twist, f"{robot_prefix}/cmd_vel", 10)
         self.odom_sub = self.create_subscription(Odometry, f"{robot_prefix}/odom", self.odom_cb, 10)
         self.cmd_sub = self.create_subscription(Twist, incoming_topic, self.cmd_cb, 10)
-        self.control_timer = self.create_timer(0.1, self.control_loop)
+        self.control_timer = self.create_timer(1 / 50, self.control_loop)
         self.status_timer = self.create_timer(1.0, self.check_flying)
 
         # Initialize variables
