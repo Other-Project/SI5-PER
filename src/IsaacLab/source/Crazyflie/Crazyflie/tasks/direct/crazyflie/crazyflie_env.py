@@ -130,11 +130,11 @@ class CrazyflieEnvCfg(DirectRLEnvCfg):
     landing_penalty_scale = -10.0
     action_penalty_scale = -0.01
     
-    landing_height_threshold = 0.2
+    landing_height_threshold = 0.4
     landing_radius = 0.06 
 
     # random pose range
-    platform_spawn_range_xy = 4.0
+    drone_spawn_range_xy = 4.0
     platform_spawn_z = 0.0
 
     # Alpha bot movement parameters
@@ -143,7 +143,7 @@ class CrazyflieEnvCfg(DirectRLEnvCfg):
 
     # Curriculum learning parameters
     curriculum_length_steps = 14400
-    curriculum_easy_height = 0.3
+    curriculum_easy_height = 0.5
     curriculum_hard_height = 3.0
 
 class CrazyflieEnv(DirectRLEnv):
@@ -343,7 +343,7 @@ class CrazyflieEnv(DirectRLEnv):
         
         safe_transit_height = 1.0
         
-        desired_z = target_pos_w[:, 2] + torch.clamp(horizontal_dist, min=0.0, max=safe_transit_height)
+        desired_z = target_pos_w[:, 2] + torch.clamp(horizontal_dist, min=self.cfg.landing_height_threshold, max=safe_transit_height)
         
         virtual_target_w = target_pos_w.clone()
         virtual_target_w[:, 2] = desired_z
@@ -356,9 +356,10 @@ class CrazyflieEnv(DirectRLEnv):
         
         on_top_of_target = horizontal_dist < self.cfg.landing_radius
         height_error = root_pos_w[:, 2] - target_pos_w[:, 2]
-        height_penalty = height_error * on_top_of_target.float()
         
-        is_at_landing_height = torch.abs(height_error) < self.cfg.landing_height_threshold
+        height_penalty = torch.where(on_top_of_target, height_error, height_penalty)
+        
+        is_at_landing_height = height_error < (self.cfg.landing_height_threshold + 0.05)
         is_aligned = horizontal_dist < (self.cfg.landing_radius / 2.0)
         is_cutting_motors = thrust_action < -0.8
         
@@ -486,7 +487,7 @@ class CrazyflieEnv(DirectRLEnv):
         platform_new_pos_w = random_pos 
         
         easy_radius = 0.0
-        hard_radius = self.cfg.platform_spawn_range_xy
+        hard_radius = self.cfg.drone_spawn_range_xy
         current_radius = easy_radius + curr_factor * (hard_radius - easy_radius)
         
         noise_xy = torch.zeros(len(env_ids), 2, device=self.device)
