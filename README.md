@@ -33,7 +33,7 @@ The system can then be deployed on physical hardware to analyze and bridge the r
     ```
 
 2. Install ROS Jazzy, Gazebo Harmonic and Webots.  
-   An helper script is available for Ubuntu 24.04: `utils/install.sh`  
+   A helper script is available for Ubuntu 24.04: `utils/install.sh`  
    Another helper script is available to deploy on the Alphabot2 with Ubuntu Server 24.04: `utils/install_deployed.sh`
 
 3. [Install uv](https://docs.astral.sh/uv/#installation) to manage Python dependencies
@@ -45,7 +45,7 @@ The system can then be deployed on physical hardware to analyze and bridge the r
 | Command        | Description                               |
 |----------------|-------------------------------------------|
 | `make install` | Install all ROS dependencies              |
-| `make build`   | Build all ROS package                     | 
+| `make build`   | Build all ROS packages                    | 
 | `make package` | Helper script to create a new ROS package |
 
 ### Simulation
@@ -56,7 +56,7 @@ The system can then be deployed on physical hardware to analyze and bridge the r
 | `make sim`        | Starts the Gazebo simulation                     |
 | `make sim_webots` | Starts the Webots simulation                     |
 
-If you're using Issac on Windows, you should use theses commands instead of `make isaac`:
+If you're using Isaac on Windows, you should use these commands instead of `make isaac`:
 
 ```
 uv sync --directory src/IsaacLab
@@ -123,8 +123,8 @@ reproducible pipeline that bridges the gap between high-speed simulation (Isaac 
 ### Simulation-based approach
 
 While training a Deep RL agent directly on a physical drone is technically possible, this approach is not recommended
-and might be sub-optimal. Real-world training can be really time-consuming, risks damaging the hardware during
-trial-and-error phases, and often fails to converge to a stable policy.
+and might be sub-optimal. Real-world training can be time-consuming, risks damaging the hardware during trial-and-error
+phases, and often fails to converge to a stable policy.
 
 To overcome these physical limitations, simulation-based approaches offer a highly effective alternative. The use of
 physical simulators creates a safe and cost-effective environment in which agents can fail millions of times without
@@ -132,7 +132,7 @@ risking damage to expensive equipment or compromising safety. In addition, simul
 parallelized, allowing thousands of instances to run simultaneously in physics engines [^10]. This capability compresses
 weeks of real flight experience into a few minutes of computation time, greatly accelerating the learning process.
 
-### Algorithm
+### Control Strategy
 
 To successfully land a nano-drone on a moving platform, the control strategy must handle dynamic environments, sensor
 noise, and complex aerodynamic interactions (like the ground effect).
@@ -141,15 +141,15 @@ noise, and complex aerodynamic interactions (like the ground effect).
 
 Traditional control algorithms, such as PID or MPC, rely heavily on precise mathematical models and manual tuning. While
 well-understood, they struggle to handle unmodeled non-linear dynamics and often need too much computing power to run in
-real-time on constrained edge devices. [^4].
+real-time on constrained edge devices [^4].
 
 #### The Chosen Solution: Deep Reinforcement Learning (DRL)
 
-To bypass the limitations of classical mathematical modeling, we implemented a Deep Reinforcement Learning (DRL)
-architecture. In this setup, an artificial agent learns the optimal landing policy through millions of trial-and-error
-interactions inside a massively parallelized physics simulation. Rather than explicitly programming the flight dynamics,
-we define the landing objective via a reward function, and the neural network policy continuously updates its weights to
-maximize its success rate.
+To bypass the limitations of mathematical modeling, we implemented a Deep Reinforcement Learning (DRL) architecture. In
+this setup, an artificial agent learns the optimal landing policy through numerous trial-and-error interactions inside a
+massively parallelized physics simulation. Rather than explicitly programming the flight dynamics, we define the landing
+objective via a reward function, and the neural network policy continuously updates its weights to maximize its success
+rate.
 
 **Model Observations (Inputs)**
 The agent relies on a 13-dimensional continuous observation space to maintain real-time awareness of both its own state
@@ -172,8 +172,9 @@ Based on the observations, the trained policy dictates the drone's movement by o
 
 ### Curriculum learning
 
-To further optimize our model, we incorporated Curriculum learning in our DLR training pipeline. This approach organizes
-training based on increasing complexity, guiding the model from elementary examples towards the full set of tasks [^8].
+To further optimize the model, we implemented Curriculum learning into the DRL training process. This approach
+structures training according to increasing levels of complexity and moves the model from elementary examples to a
+comprehensive set of tasks [^8].
 
 By gradually increasing the difficulty of the environment and the landing task during training, it improves the model's
 convergence rate and robustness, reducing the total number of iterations needed to obtain an optimal
@@ -182,35 +183,35 @@ time [^6].
 
 ## Positioning Relative to the State of the Art
 
-Our approach builds upon proven methodologies in DRL for aerial robotics, while introducing a rigorous intermediate
-validation architecture to bridge the "Reality Gap".
+Our approach builds upon proven methodologies in DRL for aerial robotics, while introducing an intermediate validation
+architecture to mitigate the "Reality Gap".
 
 ### Alignment with Established Practices
 
-In continuity with the dominant literature, our solution leverages the Proximal Policy Optimization (PPO) algorithm for
-training our autonomous landing agent. As highlighted in recent papers, PPO is widely considered the preferred algorithm
-for multirotor UAV control [^1], [^2], [^4]. It provides an optimal balance between implementation simplicity and
+In continuity with existing literature, our solution uses the Proximal Policy Optimization (PPO) algorithm to train the
+autonomous landing agent. As highlighted in recent papers, PPO is often considered the preferred algorithm for
+controlling multirotor UAVs [^1], [^2], [^4]. It offers an optimal balance between implementation simplicity and
 training robustness [^1].
 
-Unlike Off-Policy algorithms such as DDPG or TD3, PPO utilizes a clipped objective function that restricts drastic
-policy updates [^1]. This mechanism prevents numerical instabilities and ensures a safer, more reliable convergence,
-which is critical for maximizing the success rate during physical deployment.
+Unlike Off-Policy algorithms such as DDPG or TD3, PPO uses a clipped objective function that restricts drastic policy
+updates [^1]. This mechanism prevents numerical instabilities and ensures safer and more reliable convergence, which is
+essential for maximizing the success rate during physical deployment.
 
 ### Dual-Simulator Validation (Sim-to-Sim)
 
-While standard approaches often attempt to transfer policies directly from a single training simulator to the real
-world, heavily relying on techniques like Domain Randomization [^14], [^15], our solution distinguishes itself by
-integrating a Sim-to-Sim validation phase [^10].
+While standard approaches tend to rely heavily on techniques such as domain randomization to attempt direct policy
+transfer from a single training simulator to the real world [^14], [^15], our solution stands out by integrating a
+Sim-to-Sim validation phase [^10].
 
-To overcome the inherent limitations of standard simulation, our workflow is split into two distinct stages:
+To overcome the limitations present in standard simulation, our workflow is split into two distinct phases:
 
-* Training Phase (via Isaac Sim): Initial policy learning is conducted on a highly parallelizable physics engine. This
-  approach maximizes computational efficiency and sample generation, allowing the agent to learn the core navigation and
-  landing tasks rapidly.
-* Validation Phase (via Gazebo): Prior to physical deployment, the trained policy is transferred to a second simulator
-  where it is evaluated within the complete ROS environment. This step serves as a critical software integration check,
-  ensuring the RL policy interfaces correctly with the ROS node architecture and the drone's overarching control stack
-  before any hardware deployment.
+* Training Phase (via Isaac Sim): Initial policy learning takes place in a highly parallelizable physics engine. This
+  approach maximizes computational efficiency and sample generation, allowing the agent to quickly learn critical tasks
+  such as navigation and landing.
+* Validation Phase (via Gazebo): Before physical deployment, the trained policy is transferred to a second simulator for
+  evaluation within a complete ROS environment. This phase serves as a critical check for software integration, ensuring
+  that the RL policy correctly interfaces with the ROS node architecture and the drone's overall control stack before
+  any hardware deployment.
 
 By validating the algorithm's system integration in this secondary digital environment before touching the hardware, we
 reduce the risks associated with software architecture deployment, ensuring a safer transition to the physical
@@ -221,15 +222,15 @@ nano-drone.
 The AI/Data (IA-ID) team primarily focused on model training and the broader IsaacLab integration, while the IoT-CPS
 team concentrated on establishing a ROS-Gazebo transfer environment. Although these components were developed somewhat
 independently, the strong coupling required for sim-to-sim transfer necessitated close and continuous collaboration
-between both specializations.
+between both teams.
 
 ### IsaacLab
 
 #### Architecture and Integration
 
 - Base Framework: The environment was heavily developed on top of the base quadcopter repository.
-- ROS-Isaac Bridge: A custom ROS bridge was successfully developed within two weeks. This enables seamless communication
-  between the IsaacLab and Gazebo simulations during the training phase.
+- ROS-Isaac Bridge: A custom ROS bridge was successfully developed within two weeks. This enables communication between
+  the IsaacLab and Gazebo simulations during the training phase.
 
 #### Curriculum Learning and Environment Design
 
@@ -240,7 +241,7 @@ between both specializations.
 - Hyperparameter Tuning: The increased complexity of the dynamic landing task necessitated a larger model. Furthermore,
   the entropy coefficient was increased to encourage the exploration of complex behaviors, most notably teaching the
   model the non-intuitive action of cutting the motors upon landing.
-- Reward Shaping: The reward and penalty functions were significantly overhauled. New constraints were added to
+- Reward Shaping: The reward and penalty functions were significantly reworked. New constraints were added to
   specifically address the landing mechanics, which operated in tandem with the baseline objectives of minimizing
   distance and velocities.
 
@@ -248,33 +249,93 @@ between both specializations.
 
 - Output Standardization: To ensure cross-simulation compatibility with the Gazebo environment, the model's output
   action space was modified to a higher-level command structure.
-- Physics Engine Conversion: Because the IsaacLab physics engine natively accepts only moments and thrust commands, a
+- Physics Engine Conversion: Because the IsaacLab physics engine natively accepts only thrust and moments commands, a
   conversion layer was implemented. This layer translates the model's high-level outputs back into precise moments and
   thrusts before applying them to the simulated quadcopter.
 
 ### Ros & Gazebo
 
-> [!Warning]
-> TODO
+#### Sim2Sim bridge
+
+The Sim2Sim bridge was implemented to connect Isaac Lab and Gazebo via a unified ROS 2 communication layer. Observations
+generated in Isaac are transmitted to Gazebo via ROS topics, where the PPO policy calculates high-level velocity
+commands that are applied to the drone model. The resulting state of the drone (position and orientation) is sent back
+to Isaac, ensuring synchronized evaluation between the simulators. This bidirectional exchange allows for a direct
+comparison of flight dynamics between the two physics engines, while maintaining the same control policy. As a result,
+this bridge establishes a Sim2Sim verification framework that can be validated and controlled before deployment in
+real-world conditions.
+
+#### Inference node
+
+The ROS 2 inference node serves as the real-time decision engine by executing the trained PPO policy via an ONNX
+runtime. Synchronized with the Gazebo simulation, it continuously evaluates state observations to compute and publish
+high-level velocity commands (`/crazyflie/input_cmd_vel`) to guide the drone toward a safe landing on the moving
+platform.
+
+#### Controller
+
+Due to the complexity of multirotor flight dynamics, a dedicated controller validates and corrects the high-level
+commands before they are transmitted to the drone. It actively corrects inputs by clamping extreme values and ensuring
+that the (x,y,z) velocity components remain kinematically coherent. To manage flight stability effectively, the
+controller dynamically adapts its behavior across three distinct flight phases:
+
+- **Takeoff:** Triggered by a positive z-velocity and an initial altitude threshold, this phase safely guides the drone
+  through its initial ascent.
+- **Cruising:** Focuses on maintaining a constant altitude and stabilizing the drone's attitude while preventing
+  instability such as flipping or sudden altitude drops.
+- **Landing:** Initiated by negative z-velocities and a lower altitude threshold, this phase carefully regulates the
+  descent rate to mitigate ground effect and ensure a smooth landing.
 
 ## Results & Future Work
 
+### Sim2Sim Validation and Performance
+
+The trained PPO policy demonstrated excellent stability within the native Isaac Lab environment. To evaluate its
+robustness before physical deployment, we conducted a Sim2Sim validation, transferring the policy to two other
+simulators: Gazebo and Webots. We analyzed three main indicators: altitude profile, travel speed, and 3D trajectories.
+
+<p align="center">
+    <img src=".assets/velocity_comparison.png" width="85%" alt="Speed diagram" /><br/>
+    <em>Speed distribution between simulators</em>
+</p>
+
+<p align="center">
+    <img src=".assets/altitude_comparison.png" width="85%" alt="Altitude diagram" /><br/>
+    <em>Altitude distribution among simulators</em>
+</p>
+
+### Simulator Analysis and 3D Trajectories
+
+<p align="center">
+    <img src="https://hackmd.io/_uploads/H1wkJ33u-x.png" width="80%" alt="Comparison of 3D trajectories between simulators" /><br/>
+    <em>Drone trajectory between simulators</em>
+</p>
+
 ### Results analysis
 
-The trained policy demonstrates excellent performance, accuracy, and stability within the native IsaacLab environment.
+The trained policy demonstrates excellent performance and accuracy within the native IsaacLab environment. The
+implementation of the three-step learning process stabilized training, enabling the policy to reliably track and land on
+a moving target. While manual conversion from linear velocities to moments and thrust occasionally introduces minor
+flight instability and slight trajectory deviations, the drone consistently reaches its objective.
+
 However, exporting the model to Gazebo revealed a noticeable drop in performance. This sim-to-sim discrepancy persists
 despite extensive efforts to align the IsaacLab model and environment parameters closely with Gazebo's physics. The
 drone exhibits slightly different flight dynamics within Gazebo, and a major contributing factor to the transfer
-difficulty is the inherent instability of the Gazebo drone model itself. Since manual piloting is already highly
-challenging even when using the default `teleop_twist` node.
+difficulty is the inherent instability of the Gazebo drone model itself.
 
-### Remaining work
+To further evaluate the model's adaptability, the policy was also tested within the Webots simulator. Unfortunately, the
+results in this environment were not very conclusive. This highlights the complexity of transfer between simulators and
+shows that this strategy is highly dependent on the accuracy of the underlying physics engine.
 
-- Refactore the codebase to a manager-based system. This architectural shift will facilitate the implementation of
-  domain randomization and curriculum learning.
-- LSTM (Long Short-Term Memory). This will enable the policy to capture temporal dependencies and memory, improving the
-  drone's overall decision-making and stability during continuous flight sequences.
+## Remaining work
+
+- Refactor the codebase to a manager-based system. This architectural shift will facilitate the implementation of domain
+  randomization and curriculum learning.
+- Implement an LSTM (Long Short-Term Memory) network. This will enable the policy to capture temporal dependencies and
+  memory, improving the drone's overall decision-making and stability during continuous flight sequences.
 - Deploy the trained policy onto the physical drone.
+
+## Bibliography
 
 [^1]: J. Amendola, L. R. Cenkeramaddi, and A. Jha, "Drone Landing and Reinforcement Learning: State-of-Art, Challenges
 and Opportunities," IEEE Open Journal of Intelligent Transportation Systems, vol. 5, pp. 520-539, 2024.
@@ -285,9 +346,7 @@ Multirotor Uavs," Drones, vol. 8, no. 4, 2024.
 Learning," Electronics, vol. 12, no. 7, 2023.
 [^6]: J. Eßer, N. Bach, C. Jestel, O. Urbann, and S. Kerner, "Guided Reinforcement Learning: A Review and Evaluation for
 Efficient and Effective Real-World Robotics [Survey]," IEEE Robotics & Automation Magazine, vol. 30, no. 2, pp. 67-85,
-
 2023.
-
 [^7]: S. Narvekar et al., "Curriculum Learning for Reinforcement Learning Domains: A Framework and Survey," Journal of
 Machine Learning Research, vol. 21, no. 181, pp. 1-50, 2020.
 [^8]: X. Wang, Y. Chen, and W. Zhu, "A Survey on Curriculum Learning," IEEE Transactions on Pattern Analysis and Machine
@@ -295,9 +354,7 @@ Intelligence, vol. 44, no. 9, pp. 4555-4576, 2022.
 [^9]: R. Portelas, C. Colas, L. Weng, K. Hofmann, and P.-Y. Oudeyer, "Automatic Curriculum Learning For Deep RL: A Short
 Survey," 2020.
 [^10]: D. Hanover et al., "Autonomous Drone Racing: A Survey," IEEE Transactions on Robotics, vol. 40, pp. 3044-3067,
-
 2024.
-
 [^14]: E. Salvato, G. Fenu, E. Medvet, and F. A. Pellegrino, "Crossing the Reality Gap: A Survey on Sim-to-Real
 Transferability of Robot Controllers in Reinforcement Learning," IEEE Access, vol. 9, pp. 153171-153187, 2021.
 [^15]: R. Polvara, M. Patacchiola, M. Hanheide, and G. Neumann, "Sim-to-Real Quadrotor Landing via Sequential Deep
