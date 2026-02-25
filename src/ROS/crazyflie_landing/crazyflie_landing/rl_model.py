@@ -123,7 +123,7 @@ class RLModelNode(LifecycleNode):
         drone_pos_w = self.vectToNumpy(self.current_pose.position)
         drone_quat_w = self.quaternionToNumpy(self.current_pose.orientation)
         target_pos_w = self.vectToNumpy(self.target_pose.position)
-        target_pos_w[2] += 0.1  # Target slightly above platform
+        target_pos_w += [-0.05, 0.05, 0.1]
         desired_pos_b = target_pos_w - drone_pos_w
         target_lin_vel_b = self.vectToNumpy(self.current_twist.linear)
 
