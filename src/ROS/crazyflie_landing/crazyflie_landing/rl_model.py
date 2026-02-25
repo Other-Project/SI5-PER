@@ -24,7 +24,7 @@ class RLModelNode(LifecycleNode):
         self.robot_land_topic = f"{robot_prefix}/land"
         self.platform_odom_topic = f"{platform_prefix}/odom"
 
-        self.dt = 1 / 50  # Must be the same as during training
+        self.dt = 1 / 10  # Must be the same as during training
         self.onnx_path = self.get_parameter("onnx_path").value
         if self.onnx_path == "":
             return  # Do nothing if no path provided
@@ -127,7 +127,7 @@ class RLModelNode(LifecycleNode):
         target_pos_w[2] += 0.053
         return target_pos_w - drone_pos_w
 
-    def _is_arrived(self, tolerance=0.1, z_tolerance=0.1):
+    def _is_arrived(self, tolerance=0.025, z_tolerance=0.02):
         vect_to_target = self._get_vect_to_target()
         if vect_to_target is None:
             return False
