@@ -16,9 +16,9 @@ class ControlServices(Node):
         self.declare_parameter("max_linear", 0.1)
         self.declare_parameter("max_ang_z_rate", 0.05)
         self.declare_parameter("height_hold_gain", 1.0)
-        self.declare_parameter("flying_threshold", 0.5)
+        self.declare_parameter("flying_threshold", 0.15)
         self.declare_parameter("max_height", 3.0)
-        self.declare_parameter("safe_takeoff_height", 0.5)
+        self.declare_parameter("safe_takeoff_height", 0.3)
 
         robot_prefix = self.get_parameter("robot_prefix").value
         incoming_topic = self.get_parameter("incoming_twist_topic").value

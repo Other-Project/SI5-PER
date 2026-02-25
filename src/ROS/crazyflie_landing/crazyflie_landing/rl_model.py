@@ -115,17 +115,23 @@ class RLModelNode(LifecycleNode):
     def quaternionToNumpy(self, quat: Quaternion) -> np.ndarray:
         return np.array([quat.w, quat.x, quat.y, quat.z])
 
+    def _get_vect_to_target(self):
+        if self.current_pose is None or self.target_pose is None:
+            return None
+
+        drone_pos_w = self.vectToNumpy(self.current_pose.position)
+        target_pos_w = self.vectToNumpy(self.target_pose.position)
+        target_pos_w[2] += 0.1
+        return target_pos_w - drone_pos_w
+
     def _build_observation_vector(self):
         if self.current_pose is None or self.current_twist is None or self.target_pose is None:
             return None  # No data yet
 
         drone_lin_vel_b = self.vectToNumpy(self.current_twist.linear)
-        drone_pos_w = self.vectToNumpy(self.current_pose.position)
         drone_quat_w = self.quaternionToNumpy(self.current_pose.orientation)
-        target_pos_w = self.vectToNumpy(self.target_pose.position)
-        target_pos_w += [-0.05, 0.05, 0.1]
-        desired_pos_b = target_pos_w - drone_pos_w
-        target_lin_vel_b = self.vectToNumpy(self.current_twist.linear)
+        desired_pos_b = self._get_vect_to_target()
+        target_lin_vel_b = self.vectToNumpy(self.target_twist.linear)
 
         return np.concatenate([drone_lin_vel_b, drone_quat_w, desired_pos_b, target_lin_vel_b])
 
