@@ -1,0 +1,118 @@
+import matplotlib
+import numpy as np
+
+matplotlib.use("Agg")
+import os
+
+import matplotlib.pyplot as plt
+from rosbags.rosbag2 import Reader
+from rosbags.typesys import Stores, get_typestore
+
+_SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+_BASE_DIR = os.path.join(_SCRIPT_DIR, "..")
+
+BAGS = {
+    "Isaac Sim": os.path.join(_BASE_DIR, "bag_isaac"),
+    "Gazebo": os.path.join(_BASE_DIR, "bag_gazebo"),
+    "Webots": os.path.join(_BASE_DIR, "bag_webots"),
+}
+
+COLORS = {
+    "Isaac Sim": "blue",
+    "Gazebo": "yellow",
+    "Webots": "red",
+}
+
+
+def read_bag(bag_path):
+    altitudes = []
+    velocities_3d = []
+
+    with Reader(bag_path) as reader:
+        typestore = get_typestore(Stores.ROS2_JAZZY)
+        connections = [c for c in reader.connections if c.topic == "/crazyflie/odom"]
+        if not connections:
+            print(f"No /crazyflie/odom in {bag_path}")
+            return None, None
+
+        for connection, _, rawdata in reader.messages(connections=connections):
+            msg = typestore.deserialize_cdr(rawdata, connection.msgtype)
+            altitudes.append(msg.pose.pose.position.z)
+            vx = msg.twist.twist.linear.x
+            vy = msg.twist.twist.linear.y
+            vz = msg.twist.twist.linear.z
+            velocities_3d.append(np.sqrt(vx**2 + vy**2 + vz**2))
+
+    return np.array(altitudes), np.array(velocities_3d)
+
+
+def main():
+    all_altitudes = {}
+    all_velocities = {}
+
+    for label, bag_path in BAGS.items():
+        if not os.path.exists(bag_path):
+            print(f"Bag not found: {bag_path}")
+            continue
+        print(f"Reading {label}...")
+        alt, vel = read_bag(bag_path)
+        if alt is not None:
+            all_altitudes[label] = alt
+            all_velocities[label] = vel
+
+    if not all_altitudes:
+        print("No data found.")
+        return
+
+    labels = list(all_altitudes.keys())
+    colors = [COLORS.get(l, "gray") for l in labels]
+
+    fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(8, 10))
+    fig.suptitle("Flight Metrics Distribution across Simulations", fontsize=14, fontweight="bold")
+
+    # Altitude Plot
+    bp1 = ax1.boxplot(
+        [all_altitudes[l] for l in labels],
+        labels=labels,
+        patch_artist=True,
+        showfliers=False,
+        flierprops=dict(marker="o", markersize=4, alpha=0.4),
+        medianprops=dict(color="black", linewidth=2),
+    )
+    for patch, color in zip(bp1["boxes"], colors):
+        patch.set_facecolor(color)
+        patch.set_alpha(0.7)
+
+    ax1.set_title("Flight Altitude", fontsize=12)
+    ax1.set_ylabel("Altitude (m)")
+    ax1.grid(True, alpha=0.3, axis="y")
+    ax1.set_ylim(-0.1, 2.0)
+
+    # Velocity Plot
+    bp2 = ax2.boxplot(
+        [all_velocities[l] for l in labels],
+        labels=labels,
+        patch_artist=True,
+        notch=False,
+        showfliers=False,
+        flierprops=dict(marker="o", markersize=3, alpha=0.4),
+        medianprops=dict(color="black", linewidth=2),
+    )
+    for patch, color in zip(bp2["boxes"], colors):
+        patch.set_facecolor(color)
+        patch.set_alpha(0.7)
+
+    ax2.set_title("3D Speed", fontsize=12)
+    ax2.set_ylabel("Speed (m/s)")
+    ax2.grid(True, alpha=0.3, axis="y")
+
+    plt.tight_layout()
+    output_dir = os.path.join(_BASE_DIR, ".out", "graph")
+    os.makedirs(output_dir, exist_ok=True)
+    output = os.path.join(output_dir, "boxplots_comparison.png")
+    plt.savefig(output, dpi=150, bbox_inches="tight")
+    print(f"\nBoxplots saved to {output}")
+
+
+if __name__ == "__main__":
+    main()

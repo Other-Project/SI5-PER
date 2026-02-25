@@ -96,43 +96,6 @@
     <child link="base_link"/>
   </joint>
 
-  <!-- Laser sensor link -->
-  <link name="laser_link">
-    <inertial>
-      <origin xyz="0 0 0" rpy="0 0 0"/>
-      <mass value="0.001"/>
-      <inertia ixx="0.0001" iyy="0.0001" izz="0.0001" ixy="0" ixz="0" iyz="0"/>
-    </inertial>
-    <collision>
-      <origin xyz="0 0 0" rpy="0 0 0"/>
-      <geometry>
-        <box size="0.01 0.01 0.01"/>
-      </geometry>
-    </collision>
-    <visual>
-      <origin xyz="0 0 0" rpy="0 0 0"/>
-      <geometry>
-        <box size="0.01 0.01 0.01"/>
-      </geometry>
-    </visual>
-  </link>
-
-  <!-- Joint between body and laser -->
-  <joint name="body_to_laser" type="fixed">
-    <parent link="base_link"/>
-    <child link="laser_link"/>
-    <origin xyz="0 0 0.04" rpy="0 0 0"/>
-  </joint>
-
-  <!-- Lidar sensor link (child of laser_link for proper frame hierarchy) -->
-  <link name="lidar_sensor"/>
-
-  <joint name="laser_to_lidar_sensor" type="fixed">
-    <parent link="laser_link"/>
-    <child link="lidar_sensor"/>
-    <origin xyz="0 0 0" rpy="0 0 0"/>
-  </joint>
-
   <!-- Joints between body and props -->
   <joint name="body_to_m1_prop" type="continuous">
     <parent link="base_link"/>
@@ -261,53 +224,18 @@
       <motorType>velocity</motorType>
     </plugin>
 
-      <plugin
+    <plugin
       filename="gz-sim-odometry-publisher-system"
       name="gz::sim::systems::OdometryPublisher">
-      <dimensions>3</dimensions>
+      <dimensions>3</dimensions> 
+      <odom_publish_frequency>50</odom_publish_frequency>
+      
+      <odom_frame>world</odom_frame>
+      <robot_base_frame>base_footprint</robot_base_frame>
+            
+      <xyz_offset>0 0 0</xyz_offset>
+      <rpy_offset>0 0 0</rpy_offset>
+      <gaussian_noise>0</gaussian_noise>
     </plugin>
-
-    <!-- Sensors system plugin - REQUIRED for sensor data -->
-    <plugin
-      filename="gz-sim-sensors-system"
-      name="gz::sim::systems::Sensors">
-      <render_engine>ogre2</render_engine>
-    </plugin>
-  </gazebo>
-
-  <!-- LiDAR sensor attached to lidar_sensor link -->
-  <gazebo reference="lidar_sensor">
-    <sensor name="lidar_sensor" type="gpu_lidar">
-      <topic>/lidar</topic>
-      <update_rate>10</update_rate>
-      <always_on>true</always_on>
-      <visualize>true</visualize>
-      <lidar>
-        <scan>
-          <horizontal>
-            <samples>360</samples>
-            <resolution>1</resolution>
-            <min_angle>-3.14159</min_angle>
-            <max_angle>3.14159</max_angle>
-          </horizontal>
-          <vertical>
-            <samples>1</samples>
-            <resolution>1</resolution>
-            <min_angle>0</min_angle>
-            <max_angle>0</max_angle>
-          </vertical>
-        </scan>
-        <range>
-          <min>0.08</min>
-          <max>10.0</max>
-          <resolution>0.01</resolution>
-        </range>
-        <noise>
-          <type>gaussian</type>
-          <mean>0.0</mean>
-          <stddev>0.01</stddev>
-        </noise>
-      </lidar>
-    </sensor>
   </gazebo>
 </robot>

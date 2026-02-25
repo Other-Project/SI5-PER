@@ -4,6 +4,7 @@ import rclpy
 from geometry_msgs.msg import Point, Quaternion, Twist, Vector3
 from nav_msgs.msg import Odometry
 from rclpy.lifecycle import LifecycleNode, State, TransitionCallbackReturn
+from std_msgs.msg import Bool
 
 
 class RLModelNode(LifecycleNode):
@@ -20,9 +21,10 @@ class RLModelNode(LifecycleNode):
         platform_prefix = self.get_parameter("platform_prefix").value
         self.robot_cmd_topic = self.get_parameter("robot_cmd_topic").value
         self.robot_odom_topic = f"{robot_prefix}/odom"
+        self.robot_land_topic = f"{robot_prefix}/land"
         self.platform_odom_topic = f"{platform_prefix}/odom"
 
-        self.dt = 1 / 100  # Must be the same as during training
+        self.dt = 1 / 10  # Must be the same as during training
         self.onnx_path = self.get_parameter("onnx_path").value
         if self.onnx_path == "":
             return  # Do nothing if no path provided
@@ -54,6 +56,7 @@ class RLModelNode(LifecycleNode):
 
         # Publisher for action commands
         self._robot_cmd_pub = self.create_lifecycle_publisher(Twist, self.robot_cmd_topic, 10)
+        self._land_pub = self.create_lifecycle_publisher(Bool, self.robot_land_topic, 10)
 
         # Timer for control loop (to ensure fixed frequency)
         self._timer = self.create_timer(self.dt, self.control_loop, autostart=False)
@@ -84,6 +87,7 @@ class RLModelNode(LifecycleNode):
         self.current_pose = None
         self.current_twist = None
         self.target_pose = None
+        self.target_twist = None
 
         self._timer.reset()
 
@@ -106,6 +110,7 @@ class RLModelNode(LifecycleNode):
 
     def target_odometry_callback(self, msg: Odometry):
         self.target_pose = msg.pose.pose
+        self.target_twist = msg.twist.twist
 
     def vectToNumpy(self, vec: Vector3 | Point) -> np.ndarray:
         return np.array([vec.x, vec.y, vec.z])
@@ -113,21 +118,44 @@ class RLModelNode(LifecycleNode):
     def quaternionToNumpy(self, quat: Quaternion) -> np.ndarray:
         return np.array([quat.w, quat.x, quat.y, quat.z])
 
+    def _get_vect_to_target(self):
+        if self.current_pose is None or self.target_pose is None:
+            return None
+
+        drone_pos_w = self.vectToNumpy(self.current_pose.position)
+        target_pos_w = self.vectToNumpy(self.target_pose.position)
+        target_pos_w[2] += 0.053
+        return target_pos_w - drone_pos_w
+
+    def _is_arrived(self, tolerance=0.025, z_tolerance=0.02):
+        vect_to_target = self._get_vect_to_target()
+        if vect_to_target is None:
+            return False
+        distance = np.linalg.norm(vect_to_target[:2])
+        return distance < tolerance and abs(vect_to_target[2]) < z_tolerance
+
     def _build_observation_vector(self):
         if self.current_pose is None or self.current_twist is None or self.target_pose is None:
             return None  # No data yet
 
         drone_lin_vel_b = self.vectToNumpy(self.current_twist.linear)
-        drone_pos_w = self.vectToNumpy(self.current_pose.position)
         drone_quat_w = self.quaternionToNumpy(self.current_pose.orientation)
-        target_pos_w = self.vectToNumpy(self.target_pose.position)
-        target_pos_w[2] += 0.1  # Target slightly above platform
-        desired_pos_b = target_pos_w - drone_pos_w
+        desired_pos_b = self._get_vect_to_target()
+        target_lin_vel_b = self.vectToNumpy(self.target_twist.linear)
 
-        return np.concatenate([drone_lin_vel_b, drone_quat_w, desired_pos_b])
+        return np.concatenate([drone_lin_vel_b, drone_quat_w, desired_pos_b, target_lin_vel_b])
 
     def control_loop(self):
         """Main loop: Observation -> Inference -> Action"""
+
+        arrived = self._is_arrived()
+        if arrived:
+            self.get_logger().info("Arrived at target position. Disabling automated control.")
+            twist_msg = Twist()
+            twist_msg.linear.z = -0.5
+            self._robot_cmd_pub.publish(twist_msg)
+            self._land_pub.publish(Bool(data=False))  # Deactivate landing mode
+            return
 
         obs = self._build_observation_vector()
         if obs is None:
@@ -156,6 +184,7 @@ class RLModelNode(LifecycleNode):
         twist_msg.linear.y = float(velocity_y * 0.5)
         twist_msg.linear.z = float(velocity_z * 0.5)
         twist_msg.angular.z = float(angular_velocity_z * 0.4)
+
         self._robot_cmd_pub.publish(twist_msg)
 
 

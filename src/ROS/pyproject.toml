@@ -8,7 +8,9 @@ dependencies = [
     "cflib>=0.1.29",
     "numpy>=2.3.5",
     "onnxruntime>=1.23.2",
+    "pillow>=12.1.0",
     "pyyaml>=6.0",
+    "transforms3d>=0.4.2",
 ]
 
 [dependency-groups]

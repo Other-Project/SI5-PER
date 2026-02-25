@@ -1,0 +1,49 @@
+#VRML_SIM R2025a utf8
+
+EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2023b/projects/objects/backgrounds/protos/TexturedBackground.proto"
+EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2023b/projects/objects/lights/protos/CeilingLight.proto"
+EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2023b/projects/robots/bitcraze/crazyflie/protos/Crazyflie.proto"
+EXTERNPROTO "../proto/Alphabot2.proto"
+EXTERNPROTO "../protos/Floor.proto"
+
+WorldInfo {
+  info [
+    "Bitcraze's Crazyflie drone with autonomoy."
+    "This simulation has the Crazyflie in an apartement with wall following'"
+  ]
+  title "Crazyflie Apartment"
+}
+Viewpoint {
+  orientation -0.03027355823348744 -0.08430823181138392 0.9959797355974276 5.591062068904635
+  position -3.9657869062698987 4.318619779126275 1.5801081798955217
+  exposure 0.5
+  follow "Crazyflie"
+}
+TexturedBackground {
+  texture "empty_office"
+  skybox FALSE
+  skyColor [
+    0.2 0.2 0.2
+  ]
+}
+CeilingLight {
+  translation -6.2841 -2.4706 2.4
+  name "ceiling light 1(1)"
+  pointLightIntensity 5
+}
+CeilingLight {
+  translation -1.3341 -2.4706 2.4
+  name "ceiling light 1"
+  pointLightIntensity 5
+}
+Crazyflie {
+  translation 2.0 2.0 0
+  controller "<extern>"
+}
+Alphabot2 {
+  translation 0 0 0.005
+  controller "<extern>"
+}
+Floor {
+  name "floor(1)"
+}
