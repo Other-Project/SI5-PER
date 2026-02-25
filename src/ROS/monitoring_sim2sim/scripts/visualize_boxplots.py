@@ -1,10 +1,12 @@
-import numpy as np
 import matplotlib
-matplotlib.use('Agg')
+import numpy as np
+
+matplotlib.use("Agg")
+import os
+
 import matplotlib.pyplot as plt
 from rosbags.rosbag2 import Reader
 from rosbags.typesys import Stores, get_typestore
-import os
 
 _SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 _BASE_DIR = os.path.join(_SCRIPT_DIR, "..")
@@ -66,8 +68,7 @@ def main():
     colors = [COLORS.get(l, "gray") for l in labels]
 
     fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(8, 10))
-    fig.suptitle("Flight Metrics Distribution across Simulations",
-                 fontsize=14, fontweight='bold')
+    fig.suptitle("Flight Metrics Distribution across Simulations", fontsize=14, fontweight="bold")
 
     # Altitude Plot
     bp1 = ax1.boxplot(
@@ -75,16 +76,16 @@ def main():
         labels=labels,
         patch_artist=True,
         showfliers=False,
-        flierprops=dict(marker='o', markersize=4, alpha=0.4),
-        medianprops=dict(color='black', linewidth=2),
+        flierprops=dict(marker="o", markersize=4, alpha=0.4),
+        medianprops=dict(color="black", linewidth=2),
     )
-    for patch, color in zip(bp1['boxes'], colors):
+    for patch, color in zip(bp1["boxes"], colors):
         patch.set_facecolor(color)
         patch.set_alpha(0.7)
 
     ax1.set_title("Flight Altitude", fontsize=12)
     ax1.set_ylabel("Altitude (m)")
-    ax1.grid(True, alpha=0.3, axis='y')
+    ax1.grid(True, alpha=0.3, axis="y")
     ax1.set_ylim(-0.1, 2.0)
 
     # Velocity Plot
@@ -94,22 +95,22 @@ def main():
         patch_artist=True,
         notch=False,
         showfliers=False,
-        flierprops=dict(marker='o', markersize=3, alpha=0.4),
-        medianprops=dict(color='black', linewidth=2),
+        flierprops=dict(marker="o", markersize=3, alpha=0.4),
+        medianprops=dict(color="black", linewidth=2),
     )
-    for patch, color in zip(bp2['boxes'], colors):
+    for patch, color in zip(bp2["boxes"], colors):
         patch.set_facecolor(color)
         patch.set_alpha(0.7)
 
     ax2.set_title("3D Speed", fontsize=12)
     ax2.set_ylabel("Speed (m/s)")
-    ax2.grid(True, alpha=0.3, axis='y')
+    ax2.grid(True, alpha=0.3, axis="y")
 
     plt.tight_layout()
     output_dir = os.path.join(_BASE_DIR, ".out", "graph")
     os.makedirs(output_dir, exist_ok=True)
     output = os.path.join(output_dir, "boxplots_comparison.png")
-    plt.savefig(output, dpi=150, bbox_inches='tight')
+    plt.savefig(output, dpi=150, bbox_inches="tight")
     print(f"\nBoxplots saved to {output}")
 
 

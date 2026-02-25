@@ -1,13 +1,12 @@
+import argparse
+
 import numpy as np
 from rosbags.rosbag2 import Reader
 from rosbags.typesys import Stores, get_typestore
 
-import argparse
-import sys
-
 DEFAULT_BAG = "../bag_gazebo/"
 DEFAULT_OUTPUT = "../.out/metrics/gazebo_trajectory.npz"
-target_height = 0.1 #TODO: i think this height has been changed in the simulation, make sure its applied everywhere
+target_height = 0.1  # TODO: i think this height has been changed in the simulation, make sure its applied everywhere
 
 
 def main():
@@ -82,7 +81,7 @@ def main():
     print(f"  Std Deviation:        {np.std(distances):.4f} m")
     print(f"{'=' * 60}")
 
-    # output_file = "../.out/metrics/gazebo_trajectory.npz" 
+    # output_file = "../.out/metrics/gazebo_trajectory.npz"
     np.savez(
         output_file,
         drone_positions=np_drone_positions,

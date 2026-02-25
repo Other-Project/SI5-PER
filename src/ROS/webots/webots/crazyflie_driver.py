@@ -267,7 +267,7 @@ class pid_velocity_fixed_height_controller:
         alt_error = desired_altitude - actual_altitude
         alt_deriv = (alt_error - self.past_alt_error) / dt
         self.altitude_integrator += alt_error * dt
-        
+
         # Feedforward term (balanced stability vs reactivity)
         # alt_command = gains["kp_z"] * alt_error + gains["kd_z"] * alt_deriv + gains["ki_z"] * np.clip(self.altitude_integrator, -5, 5) + 350
         alt_command = gains["kp_z"] * alt_error + gains["kd_z"] * alt_deriv + gains["ki_z"] * np.clip(self.altitude_integrator, -2, 2) + 67

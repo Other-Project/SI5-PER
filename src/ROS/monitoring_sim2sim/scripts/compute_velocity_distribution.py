@@ -1,9 +1,8 @@
+import argparse
+
 import numpy as np
 from rosbags.rosbag2 import Reader
 from rosbags.typesys import Stores, get_typestore
-
-import argparse
-import sys
 
 DEFAULT_BAG = "../gazebo_bags/gazebo_run1"
 

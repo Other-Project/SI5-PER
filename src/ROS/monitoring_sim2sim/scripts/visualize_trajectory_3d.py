@@ -25,9 +25,12 @@ def main():
         default_gazebo = "src/ROS/monitoring_sim2sim/.out/metrics/gazebo_trajectory.npz"
         default_webots = "src/ROS/monitoring_sim2sim/.out/metrics/webots_trajectory.npz"
         default_isaac = "src/ROS/monitoring_sim2sim/.out/metrics/isaac_trajectory.npz"
-        if os.path.exists(default_gazebo): files_map["Gazebo"] = default_gazebo
-        if os.path.exists(default_webots): files_map["Webots"] = default_webots
-        if os.path.exists(default_isaac): files_map["Isaac Sim"] = default_isaac
+        if os.path.exists(default_gazebo):
+            files_map["Gazebo"] = default_gazebo
+        if os.path.exists(default_webots):
+            files_map["Webots"] = default_webots
+        if os.path.exists(default_isaac):
+            files_map["Isaac Sim"] = default_isaac
 
     if not files_map:
         print("No files provided and defaults not found.")
@@ -65,14 +68,20 @@ def main():
             continue
 
         # Plot Drone Trajectory
-        ax.plot(drone_pos[:, 0], drone_pos[:, 1], drone_pos[:, 2],
-                label=f"{label}", color=colors.get(label, "green"), linestyle=styles.get(label, "-"), linewidth=1.5, alpha=0.9)
+        ax.plot(
+            drone_pos[:, 0],
+            drone_pos[:, 1],
+            drone_pos[:, 2],
+            label=f"{label}",
+            color=colors.get(label, "green"),
+            linestyle=styles.get(label, "-"),
+            linewidth=1.5,
+            alpha=0.9,
+        )
 
         # Start/End markers
-        ax.scatter(drone_pos[0, 0], drone_pos[0, 1], drone_pos[0, 2],
-                   color=colors.get(label, "green"), marker="o", facecolors="none", s=30)
-        ax.scatter(drone_pos[-1, 0], drone_pos[-1, 1], drone_pos[-1, 2],
-                   color=colors.get(label, "green"), marker="x", s=50)
+        ax.scatter(drone_pos[0, 0], drone_pos[0, 1], drone_pos[0, 2], color=colors.get(label, "green"), marker="o", facecolors="none", s=30)
+        ax.scatter(drone_pos[-1, 0], drone_pos[-1, 1], drone_pos[-1, 2], color=colors.get(label, "green"), marker="x", s=50)
 
         # Platform trajectory
         ax.plot(
@@ -82,7 +91,7 @@ def main():
             label=f"{label} Platform",
             color=colors.get(label, "green"),
             linestyle="--",
-            alpha=0.5
+            alpha=0.5,
         )
 
         all_x.extend(drone_pos[:, 0])
@@ -104,7 +113,7 @@ def main():
         ax.set_zlim(mid_z - max_range, mid_z + max_range)
 
     ax.legend()
-    
+
     script_dir = os.path.dirname(os.path.abspath(__file__))
     output_dir = os.path.join(script_dir, "..", ".out", "graph")
     os.makedirs(output_dir, exist_ok=True)
@@ -112,6 +121,7 @@ def main():
 
     plt.savefig(output_img, bbox_inches="tight")
     print(f"Plot saved to {output_img}")
+
 
 if __name__ == "__main__":
     main()
