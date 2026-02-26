@@ -242,9 +242,9 @@ To manage flight stability effectively, the controller dynamically adapts its be
 
 ## Results & Future Work
 
-https://github.com/user-attachments/assets/85529f86-2be9-419c-8b3c-ed75e1c3e3ba
+https://github.com/user-attachments/assets/9cc35303-9767-4fdd-87d1-bb9a92fc843b
 
-https://github.com/user-attachments/assets/9269c121-b97e-43cf-8718-f82dc8c68245
+https://github.com/user-attachments/assets/85529f86-2be9-419c-8b3c-ed75e1c3e3ba
 
 ### Sim2Sim Validation and Performance
 
