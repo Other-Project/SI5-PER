@@ -11,7 +11,7 @@
     </a><br />
     <span>
         Work carried out between October 2025 and February 2026
-        <br/>by <a href="https://github.com/komi-assimpah">Komi Jean-Paul Assimpah</a> (IoT-CPS), <a href="https://github.com/AlbanFALCOZ">Alban Falcoz</a> (IA-ID), <a href="https://github.com/06Games">Evan Galli</a> (IoT-CPS) and <a href="https://github.com/Alexandre-Gripari">Alexandre Gripari</a> (IA-ID)
+        <br/>by <a href="https://github.com/komi-assimpah">Komi Jean Paul Assimpah</a> (IoT-CPS), <a href="https://github.com/AlbanFALCOZ">Alban Falcoz</a> (IA-ID), <a href="https://github.com/06Games">Evan Galli</a> (IoT-CPS) and <a href="https://github.com/Alexandre-Gripari">Alexandre Gripari</a> (IA-ID)
         <br/>as part of the <b>Study and Research Project</b> (development) and under the supervision of <a href="https://github.com/gerald-rocher">Gérald Rocher</a>.
     </span>
 </p>
