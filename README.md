@@ -94,8 +94,7 @@ python ./utils/run_helper.py
 * [State of the Art](docs/StateOfArt.pdf)
 * [Poster](docs/Poster.pdf)
 
-> [!Warning]
-> TODO: Video
+https://github.com/user-attachments/assets/d51fbb27-675b-4644-844c-370e91da9fc0
 
 ---
 
@@ -242,6 +241,10 @@ To manage flight stability effectively, the controller dynamically adapts its be
 - Landing: Initiated by a strong negative z-velocity input at a low altitude, this phase manages the final descent.
 
 ## Results & Future Work
+
+https://github.com/user-attachments/assets/85529f86-2be9-419c-8b3c-ed75e1c3e3ba
+
+https://github.com/user-attachments/assets/9269c121-b97e-43cf-8718-f82dc8c68245
 
 ### Sim2Sim Validation and Performance
 
