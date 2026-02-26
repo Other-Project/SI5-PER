@@ -1,7 +1,18 @@
 ﻿import torch
-from geometry_msgs.msg import Twist, Pose
-from nav_msgs.msg import Odometry
-from rclpy.node import Node
+
+from src.IsaacLab.source.Crazyflie.Crazyflie.tasks.direct.crazyflie.crazyflie_env import ROS2_AVAILABLE
+
+ROS2_AVAILABLE = False
+try :
+    import rclpy
+    from geometry_msgs.msg import Twist, Pose
+    from nav_msgs.msg import Odometry
+    ROS2_AVAILABLE = True
+except ImportError:
+    class Node:
+        def __init__(self, name):
+            pass
+    ROS2_AVAILABLE = False
 
 
 class IsaacRosBridge(Node):
@@ -11,6 +22,10 @@ class IsaacRosBridge(Node):
 
     def __init__(self, topic_cmd="/crazyflie/input_cmd_vel", reset_pub="/crazyflie/set_pose",
                  topic_odom="/crazyflie/odom"):
+
+        if not ROS2_AVAILABLE:
+            return
+
         super().__init__("isaac_ros_bridge_node")
 
         self.cmd_pub = self.create_publisher(Twist, topic_cmd, 10)
@@ -28,6 +43,8 @@ class IsaacRosBridge(Node):
         self.received_first_msg = False
 
     def odom_callback(self, msg: Odometry):
+        if not ROS2_AVAILABLE :
+            return
         print("[ROS Bridge] Received Odom message from Gazebo")
         print(
             f"Position: ({msg.pose.pose.position.x:.2f}, {msg.pose.pose.position.y:.2f}, {msg.pose.pose.position.z:.2f})")
@@ -60,6 +77,8 @@ class IsaacRosBridge(Node):
         self.received_first_msg = True
 
     def publish_reset_pos(self, pos, quat):
+        if not ROS2_AVAILABLE:
+            return
         msg = Pose()
         msg.position.x = float(pos[0])
         msg.position.y = float(pos[1])
@@ -74,6 +93,8 @@ class IsaacRosBridge(Node):
         print(f"[ROS Bridge] Published reset position: ({pos[0]:.2f}, {pos[1]:.2f}, {pos[2]:.2f})")
 
     def publish_command(self, lin_vel, ang_vel_z):
+        if not ROS2_AVAILABLE:
+            return
         msg = Twist()
         msg.linear.x = float(lin_vel[0])
         msg.linear.y = float(lin_vel[1])
@@ -83,6 +104,8 @@ class IsaacRosBridge(Node):
 
     def publish_simulation_state(self, drone_pos, drone_quat, drone_lin_vel, drone_ang_vel,
                                  plat_pos, plat_quat, plat_lin_vel, plat_ang_vel):
+        if not ROS2_AVAILABLE:
+            return
         now = self.get_clock().now().to_msg()
 
         drone_msg = Odometry()

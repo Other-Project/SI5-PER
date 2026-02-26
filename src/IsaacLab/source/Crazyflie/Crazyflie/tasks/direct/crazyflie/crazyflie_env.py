@@ -7,8 +7,6 @@ from __future__ import annotations
 
 import gymnasium as gym
 import isaaclab.sim as sim_utils
-import rclpy
-import tf2_ros
 import torch
 from geometry_msgs.msg import TransformStamped
 from isaaclab.assets import Articulation, ArticulationCfg
@@ -26,6 +24,14 @@ from isaaclab.utils.math import subtract_frame_transforms, quat_apply, quat_appl
 ##
 from isaaclab_assets import CRAZYFLIE_CFG  # isort: skip
 
+ROS2_ENV_AVAILABLE = False
+try:
+    import rclpy
+    from .isaac_ros_bridge import IsaacRosBridge
+
+    ROS2_ENV_AVAILABLE = True
+except ImportError:
+    ROS2_ENV_AVAILABLE = False
 from .isaac_ros_bridge import IsaacRosBridge
 from ....assets import JACKAL_CFG, JACKAL_JOINTS_NAMES, JACKAL_ACTUATORS_LEFT_WHEEL, JACKAL_ACTUATORS_RIGHT_WHEEL
 
@@ -202,8 +208,9 @@ class CrazyflieEnv(DirectRLEnv):
         # add handle for debug visualization (this is set to a valid handle inside set_debug_vis)
         self.set_debug_vis(self.cfg.debug_vis)
 
-        if not rclpy.ok():
-            rclpy.init()
+        if ROS2_ENV_AVAILABLE:
+            if not rclpy.ok():
+                rclpy.init()
 
         self.bridge = IsaacRosBridge(
             topic_cmd="/crazyflie/input_cmd_vel",
@@ -254,7 +261,8 @@ class CrazyflieEnv(DirectRLEnv):
             p_pos, p_quat, p_lin_vel, p_ang_vel
         )
 
-        rclpy.spin_once(self.bridge, timeout_sec=0.0)
+        if ROS2_ENV_AVAILABLE:
+            rclpy.spin_once(self.bridge, timeout_sec=0.0)
 
     def _apply_action(self):
         target_v_x, target_v_y, target_v_z = self._drone_target_lin_vel_b[:, :3].unbind(dim=-1)
