@@ -27,8 +27,6 @@ from isaaclab_assets import CRAZYFLIE_CFG  # isort: skip
 ROS2_ENV_AVAILABLE = False
 try:
     import rclpy
-    from .isaac_ros_bridge import IsaacRosBridge
-
     ROS2_ENV_AVAILABLE = True
 except ImportError:
     ROS2_ENV_AVAILABLE = False
@@ -260,9 +258,8 @@ class CrazyflieEnv(DirectRLEnv):
             d_pos, d_quat, d_lin_vel, d_ang_vel,
             p_pos, p_quat, p_lin_vel, p_ang_vel
         )
-
-        if ROS2_ENV_AVAILABLE:
-            rclpy.spin_once(self.bridge, timeout_sec=0.0)
+        
+        self.bridge.bridge_spin_once()
 
     def _apply_action(self):
         target_v_x, target_v_y, target_v_z = self._drone_target_lin_vel_b[:, :3].unbind(dim=-1)

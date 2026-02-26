@@ -1,12 +1,11 @@
 ﻿import torch
 
-from src.IsaacLab.source.Crazyflie.Crazyflie.tasks.direct.crazyflie.crazyflie_env import ROS2_AVAILABLE
-
 ROS2_AVAILABLE = False
 try :
     import rclpy
     from geometry_msgs.msg import Twist, Pose
     from nav_msgs.msg import Odometry
+    from rclpy.node import Node
     ROS2_AVAILABLE = True
 except ImportError:
     class Node:
@@ -151,3 +150,8 @@ class IsaacRosBridge(Node):
         plat_msg.twist.twist.angular.z = float(plat_ang_vel[2])
 
         self.platform_odom_pub.publish(plat_msg)
+
+    def bridge_spin_once(self):
+        if not ROS2_AVAILABLE:
+            return
+        rclpy.spin_once(self, timeout_sec=0.01)
