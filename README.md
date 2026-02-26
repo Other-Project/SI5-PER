@@ -108,7 +108,7 @@ To keep the project focused, we have defined the following boundaries:
 
 - We strictly explore Deep Reinforcement Learning (DRL) solutions. Specifically, we utilize the PPO algorithm from the `rsl_rl` library within Isaac Lab.
 - The agent relies on odometry for state estimation (providing X, Y, Z coordinates). Rather than computing low-level motor thrusts, the policy outputs high-level velocity commands.
-- The training environment assumes a clear line of sight with no obstacles between the drone and the platform. However, we do explicitly account for complex aerodynamics, specifically modeling the ground effect as the drone approaches the landing surface.
+- The training environment assumes a clear line of sight with no obstacles between the drone and the platform.
 - For this scope, the mobile platform's movement is restricted to traveling in a straight line at a constant speed.
 - We do not claim to entirely solve the sim2real gap. Instead, our pipeline is designed to help us better understand and quantify it. By passing through a Sim2Sim validation step (Isaac Lab to Gazebo), we can isolate and measure discrepancies before our Sim2Real physical deployment.
 
@@ -141,7 +141,7 @@ The agent relies on a 13-dimensional continuous observation space to maintain re
 | Feature | Dimensions | Description |
 | :--- | :--- | :--- |
 | **Drone Linear Velocity** | 3 (X, Y, Z) | The current speed and directional movement of the nano-drone. |
-| **Drone Rotation** | 4 (Quaternion) | The spatial orientation of the drone in 3D space. |
+| **Drone Rotation** | 4 (W, X, Y, Z) | The spatial orientation of the drone in 3D space. |
 | **Relative Distance** | 3 (X, Y, Z) | The positional offset between the drone and the moving landing platform. |
 | **Target Linear Velocity** | 3 (X, Y, Z) | The speed and trajectory of the platform, necessary for predictive tracking and landing timing. |
 
@@ -187,40 +187,38 @@ The AI/Data (IA-ID) team primarily focused on model training and the broader Isa
 
 ### IsaacLab
 
-#### Architecture and Integration
-
-- Base Framework: The environment was heavily developed on top of the base quadcopter repository.
-- ROS-Isaac Bridge: This enables communication between the IsaacLab and Gazebo simulations during the training phase.
-
 #### Environment Design
+
+IsaacLab comes with a quadcopter example which served as a basis for this project.
+
+A moving platform was introduced into the environment, and the quadcopter's goal position was dynamically defined to track this moving target.
+
+The increased complexity of the dynamic landing task necessitated a larger model. Furthermore, the entropy coefficient was increased to encourage the exploration of complex behaviors, most notably teaching the model the non-intuitive action of cutting the motors upon landing.
+
+The reward and penalty functions were significantly reworked. New constraints were added to specifically address the landing mechanics, which operated in tandem with the baseline objectives of minimizing distance and velocities.
 
 <p align="center">
     <img src="docs/Poster/imgs/curriculum_learning.png" width="85%" alt="Curriculum learning steps" /><br/>
     <em>Curriculum learning steps</em>
 </p>
 
-- Dynamic Landing Platform: A moving platform was introduced into the environment, and the quadcopter's goal position was dynamically defined to track this moving target.
-- Hyperparameter Tuning: The increased complexity of the dynamic landing task necessitated a larger model. Furthermore, the entropy coefficient was increased to encourage the exploration of complex behaviors, most notably teaching the model the non-intuitive action of cutting the motors upon landing.
-- Reward Shaping: The reward and penalty functions were significantly reworked. New constraints were added to specifically address the landing mechanics, which operated in tandem with the baseline objectives of minimizing distance and velocities.
+A curriculum learning approach has been added, as it greatly assists in teaching the drone to cut its motors and actually land on the platform. Because the penalty for crashing (touching the ground) is heavy, the drone usually never cuts its motors and only hovers above. This is because it's very unlikely that randomly cutting the motors will make it land on the platform with a 1 cm tolerance. So, we first teach it to land by starting the drone right above the platform (where the optimal action is to cut the motors). Then, we progressively spawn the drone further away so it learns to fly to that position.
 
-#### Action Space Adaptation
+#### Adaptation
 
-- Output Standardization: To ensure cross-simulation compatibility with the Gazebo environment, the model's output action space was modified to a higher-level command structure.
-- Physics Engine Conversion: Because the IsaacLab physics engine natively accepts only thrust and moments commands, a conversion layer was implemented. This layer translates the model's high-level outputs back into precise moments and thrusts before applying them to the simulated quadcopter.
+- To ensure cross-simulation compatibility with the Gazebo environment, the model's output action space was modified to a higher-level command structure.
+- The IsaacLab physics engine natively accepts only thrust and moments commands, a conversion layer was implemented. This layer translates the model's high-level outputs back into moments and thrusts before applying them to the simulated quadcopter.
 
 ### Ros & Gazebo
 
-#### Sim2Sim bridge
+#### Models
 
-The Sim2Sim bridge was implemented to connect Isaac Lab and Gazebo via a unified ROS 2 communication layer. 
-Observations generated in Isaac are transmitted to Gazebo via ROS topics, where the PPO policy calculates high-level velocity commands that are applied to the drone model. 
-The resulting state of the drone (position and orientation) is sent back to Isaac, ensuring synchronized evaluation between the simulators. 
-This bidirectional exchange allows for a direct comparison of flight dynamics between the two physics engines, while maintaining the same control policy. 
-As a result, this bridge establishes a Sim2Sim verification framework that can be validated and controlled before deployment in real-world conditions.
+The drone's model was provided by Bitcraze (Crazyflie's manufacturer) in one of their example repositories.  
+The platform (Alphabot 2) was modeled by our supervisor [Gerald Rocher](https://github.com/gerald-rocher/Alphabot2) for the purpose of this project.
 
 #### Inference node
 
-The ROS 2 inference node serves as the real-time decision engine by executing the trained PPO policy via an ONNX runtime. Synchronized with the Gazebo simulation, it continuously evaluates state observations to compute and publish high-level velocity commands (`/crazyflie/input_cmd_vel`) to guide the drone toward a safe landing on the moving platform.
+The ROS 2 inference node serves as the real-time decision engine by executing the trained PPO policy via an ONNX runtime. Synchronized with the Gazebo simulation, it continuously evaluates state observations to compute and publish high-level velocity commands (into `/crazyflie/input_cmd_vel`) to guide the drone toward a safe landing on the moving platform.
 
 #### Controller manager
 
@@ -235,10 +233,20 @@ Due to the complexity of multirotor flight dynamics, a dedicated controller vali
 It actively corrects inputs by clamping extreme values while ensuring that the (x, y) velocity components remain kinematically consistent.
 To manage flight stability effectively, the controller dynamically adapts its behavior across four distinct flight phases:
 
-- On Land: Motors are disabled.
-- Takeoff: Triggered by a strong positive z-velocity input while grounded, this phase safely guides the drone through its initial ascent to a target altitude.
-- Flying: Focuses on maintaining a constant altitude when no z-velocity is inputted and prevents the drone from flying too high.
-- Landing: Initiated by a strong negative z-velocity input at a low altitude, this phase manages the final descent.
+| Phase   | Description                                                                                                                                         |
+| ------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
+| On Land | Motors are disabled.                                                                                                                                |
+| Takeoff | Triggered by a strong positive z-velocity input while grounded, this phase safely guides the drone through its initial ascent to a target altitude. |
+| Flying  | Focuses on maintaining a constant altitude when no z-velocity is inputted and prevents the drone from flying too high.                              |
+| Landing | Initiated by a strong negative z-velocity input at a low altitude, this phase manages the final descent.                                            |
+
+#### Sim2Sim bridge
+
+The Sim2Sim bridge was implemented to connect Isaac Lab and Gazebo via a unified ROS 2 communication layer. 
+Observations generated in Isaac are transmitted to Gazebo via ROS topics, where the PPO policy calculates high-level velocity commands that are applied to the drone model. 
+The resulting state of the drone (position and orientation) is sent back to Isaac, ensuring synchronized evaluation between the simulators. 
+This bidirectional exchange allows for a direct comparison of flight dynamics between the two physics engines, while maintaining the same control policy. 
+As a result, this bridge establishes a Sim2Sim verification framework that can be validated and controlled before deployment in real-world conditions.
 
 ## Results & Future Work
 
@@ -260,8 +268,6 @@ The trained PPO policy demonstrated excellent stability within the native Isaac 
     <em>Altitude distribution among simulators</em>
 </p>
 
-### Simulator Analysis and 3D Trajectories
-
 <p align="center">
     <img src="docs/Poster/imgs/monitoring.png" width="80%" alt="Comparison of 3D trajectories between simulators" /><br/>
     <em>Drone trajectory between simulators</em>
@@ -278,9 +284,9 @@ To further evaluate the model's adaptability, the policy was also tested within 
 
 ## Remaining work
 
-- Refactor the codebase to a manager-based system. This architectural shift will facilitate the implementation of domain randomization and curriculum learning.
-- Implement an LSTM (Long Short-Term Memory) network. This will enable the policy to capture temporal dependencies and memory, improving the drone's overall decision-making and stability during continuous flight sequences.
-- Deploy the trained policy onto the physical drone.
+- Refactoring the codebase to a manager-based system. This architectural shift would facilitate the implementation of domain randomization and curriculum learning.
+- Implementing an LSTM (Long Short-Term Memory) network. This would enable the policy to capture temporal dependencies and memory, improving the drone's overall decision-making and stability during continuous flight sequences.
+- Deploying the trained policy onto the physical drone.
 
 ## Bibliography
 
