@@ -22,6 +22,12 @@ class IsaacRosBridge(Node):
     def __init__(self, topic_cmd="/crazyflie/input_cmd_vel", reset_pub="/crazyflie/set_pose",
                  topic_odom="/crazyflie/odom"):
 
+        self.latest_pos = None
+        self.latest_quat = None
+        self.latest_lin_vel = None
+        self.latest_ang_vel = None
+        self.received_first_msg = False
+
         if not ROS2_AVAILABLE:
             return
 
@@ -34,12 +40,6 @@ class IsaacRosBridge(Node):
         self.platform_odom_pub = self.create_publisher(Odometry, "/isaac/alphabot/odom", 10)
 
         self.odom_sub = self.create_subscription(Odometry, topic_odom, self.odom_callback, 10)
-
-        self.latest_pos = None
-        self.latest_quat = None
-        self.latest_lin_vel = None
-        self.latest_ang_vel = None
-        self.received_first_msg = False
 
     def odom_callback(self, msg: Odometry):
         if not ROS2_AVAILABLE :

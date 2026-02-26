@@ -8,7 +8,6 @@ from __future__ import annotations
 import gymnasium as gym
 import isaaclab.sim as sim_utils
 import torch
-from geometry_msgs.msg import TransformStamped
 from isaaclab.assets import Articulation, ArticulationCfg
 from isaaclab.envs import DirectRLEnv, DirectRLEnvCfg
 from isaaclab.envs.ui import BaseEnvWindow
